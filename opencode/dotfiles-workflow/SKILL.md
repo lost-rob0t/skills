@@ -24,7 +24,7 @@ Use `lost-rob0t/skills` for:
 - skill descriptions, metadata, instructions, examples, and support files;
 - the skills flake's exported skill catalog and Home Manager module.
 
-Treat `~/.config/opencode/opencode.json` and installed paths under `~/.config/opencode/skills` as generated state when Home Manager owns them.
+Treat `$HOME/.config/opencode/opencode.json` and installed paths under `$HOME/.config/opencode/skills` as generated state when Home Manager owns them.
 
 ## Repository workflow
 
@@ -45,10 +45,10 @@ For the repository that owns the change:
 
 ## Dotfiles changes
 
-The canonical dotfiles checkout is `~/.dotfiles`, with default branch `master`:
+The canonical dotfiles checkout is `$HOME/.dotfiles`, with default branch `master`:
 
 ```sh
-cd ~/.dotfiles
+cd "$HOME/.dotfiles"
 git fetch origin
 git switch master
 git pull --ff-only origin master
@@ -65,7 +65,7 @@ For OpenCode MCP/config changes, verify the generated OpenCode behavior after ac
 
 ## Skill changes
 
-The canonical skills checkout is `~/skills`. If it does not exist, initialize it by cloning the repository there:
+The canonical skills checkout is `$HOME/skills`. If it does not exist, initialize it by cloning the repository there:
 
 ```sh
 if [ ! -d "$HOME/skills/.git" ]; then
@@ -83,7 +83,7 @@ git pull --ff-only origin main
 git switch -c feature/<short-purpose>
 ```
 
-Edit the relevant `SKILL.md`, support files, or the skills flake in `~/skills`. Validate the skills repository, push the branch, open a PR against `main`, poll CI, and merge only when green.
+Edit the relevant `SKILL.md`, support files, or the skills flake in `$HOME/skills`. Validate the skills repository, push the branch, open a PR against `main`, poll CI, and merge only when green.
 
 If the shipped skill revision is pinned by dotfiles, update dotfiles only after the skill PR merges. That second change is deployment metadata or a flake lock/input update. Do not duplicate the skill body in dotfiles.
 
@@ -91,13 +91,13 @@ If the shipped skill revision is pinned by dotfiles, update dotfiles only after 
 
 ```text
 add/change MCP server
-  -> ~/.dotfiles
+  -> $HOME/.dotfiles
   -> Nix/Home Manager source
   -> rebuild + verify
   -> PR + green CI + merge
 
 edit/create SKILL.md
-  -> ~/skills (clone if absent)
+  -> $HOME/skills (clone if absent)
   -> skill source
   -> validate skills flake
   -> PR + green CI + merge
@@ -113,6 +113,6 @@ edit/create SKILL.md
 - Never discard unrelated local work to make the workflow convenient.
 - Never bypass declarative ownership by hand-editing generated OpenCode configuration or installed skill paths.
 - Never edit a skill's durable source in dotfiles.
-- If `~/skills` exists but is not the expected Git checkout, stop rather than deleting or replacing it.
+- If `$HOME/skills` exists but is not the expected Git checkout, stop rather than deleting or replacing it.
 - If a rebuild exposes a pre-existing unrelated failure, distinguish it clearly from failures introduced by the feature branch.
 - Prefer one coherent feature branch and PR per repository change.
