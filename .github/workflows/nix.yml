@@ -20,9 +20,10 @@ jobs:
       - name: Verify exported OpenCode skill names
         run: |
           set -euo pipefail
-          test "$(nix eval --json .#lib.opencodeSkillNames)" = '["dotfiles-workflow","prolog-reasoning"]'
+          test "$(nix eval --json .#lib.opencodeSkillNames)" = '["dotfiles-workflow","prolog-reasoning","skill-portability"]'
       - name: Verify skill packages
         run: |
           set -euo pipefail
           test -f opencode/dotfiles-workflow/SKILL.md
           test -f opencode/prolog-reasoning/SKILL.md
+          test -f opencode/skill-portability/SKILL.md

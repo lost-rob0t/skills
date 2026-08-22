@@ -1,12 +1,14 @@
 ---
 name: prolog-reasoning
-description: Use the local Prolog MCP server for symbolic reasoning, constraint solving, rule evaluation, invariant checking, and debugging Prolog code. Prefer it when Prolog can cheaply verify or prune a reasoning problem; avoid it for ordinary prose, simple lookups, or trivial arithmetic.
-compatibility: OpenCode with the "prolog" MCP server from lost-rob0t/dotfiles
+description: Use a Prolog MCP server for symbolic reasoning, constraint solving, rule evaluation, invariant checking, and debugging Prolog code. Prefer it when Prolog can cheaply verify or prune a reasoning problem; avoid it for ordinary prose, simple lookups, or trivial arithmetic.
+compatibility: OpenCode with a compatible Prolog MCP server exposing the operations used below
 ---
 
 # Prolog reasoning
 
-Use the MCP server named `prolog` as a bounded symbolic coprocessor. Keep the Prolog context smaller than the surrounding coding context: encode only the facts, rules, constraints, or source needed to answer the current question.
+Requires a compatible Prolog MCP server. If it is absent and setup is requested, configure it through the user's actual agent/runtime configuration and document any non-obvious dependency; do not require the author's dotfiles.
+
+Use the MCP server named `prolog` when that name is configured, otherwise use the compatible server exposed by the current runtime. Keep the Prolog context smaller than the surrounding coding context: encode only the facts, rules, constraints, or source needed to answer the current question.
 
 ## When to use it
 
@@ -33,7 +35,7 @@ Do not invoke it merely because a task contains structured data. Direct code/sea
 7. Use `trace_goal` only when normal results plus predicate inspection do not explain a failure. Traces can become large quickly.
 8. Use `get_source` only when the accumulated live program must be inspected. Close the session with `close_session` when the reasoning task is complete.
 
-OpenCode may expose these tools with the server prefix, for example `prolog_create_session`, `prolog_run_goal`, and `prolog_close_session`.
+OpenCode may expose these tools with a server prefix, for example `prolog_create_session`, `prolog_run_goal`, and `prolog_close_session`.
 
 ## Token discipline
 
