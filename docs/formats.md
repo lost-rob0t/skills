@@ -12,20 +12,27 @@ skills/<skill-id>/
   assets/        # optional
 ```
 
-`skills/` is platform-neutral Agent Skills source. Client-specific trees are deployment views or generated adapters. Never hand-maintain separate OpenCode, Claude, Codex, Agent Zero, or other copies of the same skill body.
+`skills/` is platform-neutral Agent Skills source. Client-specific trees are deployment views or generated adapters. Never hand-maintain separate OpenCode, Claude, Codex, Cursor, Copilot, Agent Zero, or other copies of the same skill body.
 
 The canonical local checkout for editing this repository is `$HOME/skills`. Clone `lost-rob0t/skills` there if it is absent. If `$HOME/skills` already exists and is not the expected checkout, stop rather than replacing it.
 
 ## Adapter targets
 
-The initial target matrix is:
+The verified target matrix is:
 
-| Target | Deployment view |
+| Target | User/global deployment view |
 | --- | --- |
-| OpenCode | `programs.opencode.skills` / OpenCode skill source |
-| Claude-compatible | `.claude/skills/<skill-id>/` |
-| Agent Skills generic | `.agents/skills/<skill-id>/` |
+| OpenCode | `~/.config/opencode/skills/<skill-id>/` |
+| Claude Code | `~/.claude/skills/<skill-id>/` |
+| Agent Skills generic | `~/.agents/skills/<skill-id>/` |
+| Codex | `~/.codex/skills/<skill-id>/` or `~/.agents/skills/<skill-id>/` |
+| Cursor | `~/.cursor/skills/<skill-id>/` or `~/.agents/skills/<skill-id>/` |
+| GitHub Copilot | `~/.copilot/skills/<skill-id>/` or `~/.agents/skills/<skill-id>/` |
 | Agent Zero | `usr/skills/<skill-id>/` inside the Agent Zero installation |
+
+The flake exports a Home Manager module for each user-global fixed path. Agent Zero is different: `usr/skills` is relative to its installation root, so use `lib.mkAgentZeroHomeManagerModule <install-root>` rather than guessing where Agent Zero lives.
+
+OpenCode, Codex, Cursor, and Copilot can all consume the generic `~/.agents/skills` convention. Prefer that shared adapter when one installed tree should serve several clients. Use a client-native adapter when isolation or client-specific precedence matters. Claude Code still needs its Claude-compatible path for reliable personal discovery.
 
 These targets share the open `SKILL.md` model. When a client needs extra metadata or installation behavior, generate or configure that adapter from the canonical package. Do not fork the instructions merely to satisfy a client path convention.
 
@@ -55,6 +62,6 @@ Security and pentesting skills are allowed to retain reusable defensive/offensiv
 
 ## Flake contract
 
-The flake exposes the canonical catalog generically and may expose client-specific aliases/modules for compatibility. Client adapters must reference the same source paths.
+The flake exposes the canonical catalog as `lib.skills`, per-client adapter metadata as `lib.adapters`, fixed target roots as `lib.targets`, and Home Manager modules under `homeManagerModules`.
 
-A migration is incomplete if changing one skill requires editing multiple durable copies.
+Client adapters must reference the same source paths. A migration is incomplete if changing one skill requires editing multiple durable copies.
