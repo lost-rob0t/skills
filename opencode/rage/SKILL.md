@@ -1,12 +1,12 @@
 ---
 name: rage
-description: Run an issue-driven RAGE loop: consume the next eligible GitHub issue, record the immutable start commit in an Org work log, research deeply enough to challenge the inherited design, derive architecture from evidence, implement the selected slice, verify the exact candidate head, and merge only when the complete gate passes. If the design is disproven, preserve evidence, discard that implementation attempt, and restart from research/design.
+description: Run an issue-driven RAGE loop: consume the next eligible GitHub issue, record the immutable start commit in an Org work log, research deeply enough to challenge the inherited design, derive architecture from evidence, drive implementation test-first, maximize meaningful behavioral coverage, verify the exact candidate head, and merge only when the complete gate passes. If the design is disproven, preserve evidence, discard that implementation attempt, and restart from research/design.
 compatibility: OpenCode with git, gh, web research, repository tests, and Org-mode work logs
 ---
 
 # RAGE
 
-RAGE is a research-to-merge workflow for work that deserves more than "try code, stare at CI, add another conditional." It is issue-driven and evidence-driven.
+RAGE is a research-to-merge workflow for work that deserves more than "try code, stare at CI, add another conditional." It is issue-driven, evidence-driven, and test-driven.
 
 The repository's GitHub Issues are the work queue. An epic is normally a queue/container. One RAGE iteration consumes one eligible issue unless the repository explicitly defines a different atomic unit.
 
@@ -30,7 +30,7 @@ Create an Org-mode log under the target repository:
 rage/<work-log>.org
 ```
 
-Before research, design, or implementation commits, record:
+Before research, design, tests, or implementation commits, record:
 
 ```org
 * Run identity
@@ -86,25 +86,56 @@ The design must contain:
 - acceptance criteria mapped to tests;
 - exact focused and full repository gate.
 
+Every acceptance criterion must have a planned test before implementation begins. If a required path cannot be deterministically tested, explain why and specify the closest reliable proof.
+
 If implementation discovers a design-level contradiction, update the design and work log before continuing. Architecture changes are not allowed to hide inside a convenient patch.
 
-## 5. Implement one consumed issue
+## 5. TDD first, then implement one consumed issue
 
-Create focused implementation commits for the selected design.
+RAGE uses red-green-refactor as the default implementation loop:
 
-Respect the target repository's AGENTS.md, dependency ownership, branch policy, test conventions, and architecture boundaries. RAGE does not grant permission to bypass project rules; it merely makes humans write down why they are violating physics before they try.
+1. Write or update the smallest deterministic test that expresses the next required behavior or regression.
+2. Run the focused test and prove it fails for the expected reason before changing production logic.
+3. Implement the minimum coherent production change needed to make that test pass.
+4. Run the focused test again until green.
+5. Refactor only while the relevant tests remain green.
+6. Repeat for the next behavior.
+
+Do not implement a pile of behavior and backfill tests afterward when ordinary TDD is possible. A test-harness repair may precede a red test only when the test itself cannot otherwise be expressed; document that exception.
+
+Create focused implementation commits for the selected design. Respect the target repository's AGENTS.md, dependency ownership, branch policy, test conventions, and architecture boundaries. RAGE does not grant permission to bypass project rules; it merely makes humans write down why they are violating physics before they try.
 
 Do not silently expand the iteration into later child issues. If implementation reveals missing prerequisite work, create or update the appropriate issue and re-evaluate eligibility.
 
-## 6. Evaluate the exact candidate head
+## 6. Maximize meaningful coverage
 
-Run narrow tests while developing, then the repository's complete required gate at the exact candidate SHA.
+Coverage is a design aid, not a vanity scoreboard. Exercise as much reachable behavior as practical, especially around code changed by the iteration.
+
+Prefer tests that cover distinct paths:
+
+- happy paths and realistic end-to-end flows;
+- invalid input, empty values, limits, and boundary conditions;
+- startup, degraded, restart, shutdown, and cleanup states;
+- retries, cancellation, stale work, race-prone transitions, and timeouts;
+- queue/resource bounds and overload behavior;
+- security, authorization, identity, and isolation boundaries;
+- persistence, migration, and restart behavior;
+- packaging, entrypoints, installation, and configuration;
+- every regression fixed by the iteration.
+
+Do not game coverage. Never weaken assertions, add execution-only tests with no behavioral claim, exclude relevant code, or manufacture trivial branches to make a percentage larger. If a changed reachable path remains uncovered, either add a meaningful deterministic test or record the concrete reason it cannot be tested reliably.
+
+## 7. Evaluate the exact candidate head
+
+Run focused tests throughout development, then the repository's complete required gate at the exact candidate SHA.
 
 Record:
 
 - commands;
 - candidate SHA;
-- focused test results;
+- focused red/green test results where significant;
+- focused final test results;
+- changed-code coverage gaps inspected and tests added;
 - full local gate results;
 - build/package results;
 - CI workflow/run and exact SHA;
@@ -112,7 +143,7 @@ Record:
 
 A green CI run for an older SHA is stale evidence. It cannot authorize merge.
 
-## 7. Merge or trash the attempt
+## 8. Merge or trash the attempt
 
 There are two classes of failure.
 
@@ -132,15 +163,17 @@ When this happens:
 2. preserve enough commit/PR information to audit the failed attempt;
 3. discard the failed implementation attempt rather than polishing it into plausible-looking rubble;
 4. start a new numbered RAGE iteration from research/design;
-5. implement the new design independently;
-6. rerun the complete exact-head gate.
+5. write the new tests before implementing the replacement design;
+6. implement the new design independently;
+7. rerun the complete exact-head gate.
 
-## 8. Merge only when the gate is authoritative
+## 9. Merge only when the gate is authoritative
 
 Merge only when:
 
 - the consumed issue's acceptance criteria are satisfied;
 - focused tests pass;
+- meaningful reachable coverage around the changed behavior is maximized;
 - the repository's full required gate passes;
 - build/package checks pass where required;
 - the current PR head is mergeable;
@@ -153,11 +186,11 @@ After merge:
 - update parent epic/roadmap state when appropriate;
 - only then re-read the issues list and consume the next eligible issue for another iteration.
 
-## 9. Repository-local specialization
+## 10. Repository-local specialization
 
-If the target repository has its own `skills/rage/SKILL.md`, read it after this generic skill. The local skill may add gates, architecture constraints, issue ordering, or project-specific invariants. It may not weaken the generic exact-head or evidence requirements.
+If the target repository has its own `skills/rage/SKILL.md`, read it after this generic skill. The local skill may add gates, architecture constraints, issue ordering, or project-specific invariants. It may not weaken the generic TDD-first, coverage, exact-head, or evidence requirements.
 
-## 10. Minimum Org log shape
+## 11. Minimum Org log shape
 
 ```org
 #+title: RAGE Work Log - <project> <issue>
@@ -169,7 +202,9 @@ If the target repository has its own `skills/rage/SKILL.md`, read it after this 
 * Iteration 1
 ** Research
 ** Design
+** Tests / TDD
 ** Implementation
+** Coverage
 ** Gate
 ** Outcome
 
