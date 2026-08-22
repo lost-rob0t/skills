@@ -59,11 +59,11 @@ After editing, rebuild the affected Home Manager profile.
 
 ### Home Manager target resolution
 
-Keep the known desktop target for the original workflow. When running as another Unix user, try the conventional `user@hostname` Home Manager target before asking for configuration details:
+Keep the known flake target for the original workflow. When running as another Unix user, try the conventional `user@hostname` Home Manager target before asking for configuration details:
 
 ```sh
 if [ "${USER:-}" = "unseen" ]; then
-  hm_target='unseen@desktop'
+  hm_target='unseen@flake'
 else
   hm_host="$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)"
 
@@ -78,7 +78,7 @@ fi
 nix run github:nix-community/home-manager/release-26.05 -- switch --flake ".#${hm_target}"
 ```
 
-For `$USER=unseen`, preserve `unseen@desktop`; do not replace it with a guessed hostname-derived target.
+For `$USER=unseen`, preserve `unseen@flake`; do not replace it with a guessed hostname-derived target.
 
 For any other `$USER`, first try `$USER@$(hostname -s)`. If that target does not exist, the checkout uses a different Home Manager naming convention, or the machine is managed by a different activation workflow, stop guessing and prompt the user to describe their configuration/rebuild workflow and target name. Do not silently fall back to arbitrary flake attributes.
 
