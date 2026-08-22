@@ -15,16 +15,18 @@ A skill should describe the smallest repeatable procedure that changes an agent'
 - Do not duplicate policy between skills. Compose or link instead.
 - Preserve the user's existing configuration model rather than forcing the author's.
 
-See [`docs/semantics.md`](docs/semantics.md) and [`docs/portability.md`](docs/portability.md).
+See [`docs/semantics.md`](docs/semantics.md), [`docs/portability.md`](docs/portability.md), and [`docs/formats.md`](docs/formats.md).
 
 ## Layout
 
 ```text
-opencode/<skill>/SKILL.md   skill contract
-docs/                       repository-wide semantics and conventions
+skills/<skill>/SKILL.md    canonical platform-neutral skill contract
+docs/                      repository-wide semantics and conventions
 AGENTS.md                   canonical contributor/agent rules
-flake.nix                   exported OpenCode skill catalog
+flake.nix                   canonical catalog plus client deployment adapters
 ```
+
+Client-specific paths are deployment views. Do not maintain separate editable copies for OpenCode, Claude, `.agents`, Agent Zero, or another compatible runtime.
 
 ## Skills
 
@@ -40,13 +42,22 @@ Do not make `lost-rob0t/dotfiles`, `$HOME/.dotfiles`, a specific username, hostn
 
 When configuration is needed, discover the user's actual configuration source. If the agent is authorized and has the tools, it may edit that source and document the change. Otherwise, provide the minimum configuration the user must add.
 
-## Validation
+## Import privacy
 
-The flake exports the OpenCode skill catalog. CI checks that every exported skill exists.
+External agent backups are source material only. Strip target-specific operational data, credentials, private infrastructure, client identifiers, addresses, scan output, session state, and collected evidence before committing an imported skill. Preserve reusable procedures, tooling, validation logic, scripts, references, and assets.
+
+Raw backups and redaction maps do not belong in this repository, issues, PRs, or CI logs.
+
+## Flake and adapters
+
+The flake exports the canonical catalog as `lib.skills` and `lib.skillNames`. Existing consumers may continue using the compatibility aliases `lib.opencodeSkills` and `lib.opencodeSkillNames`.
+
+Current adapter metadata covers OpenCode, Claude-compatible `.claude/skills`, generic `.agents/skills`, and Agent Zero `usr/skills`. Home Manager modules are provided where the user's home directory is the correct install root.
 
 ```sh
 nix flake metadata
-nix eval --json .#lib.opencodeSkillNames
+nix eval --json .#lib.skillNames
+nix eval --json .#lib.targets
 ```
 
-New skills must be added to `flake.nix` and the CI package list in `.github/workflows/nix.yml`.
+New skills must be added to the canonical catalog in `flake.nix` and to CI validation in `.github/workflows/nix.yml`.
