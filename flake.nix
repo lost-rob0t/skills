@@ -1,27 +1,48 @@
 {
-  description = "Reusable agent skills";
+  description = "Portable reusable agent skills";
 
   outputs = { self }:
     let
-      opencodeSkills = {
-        dotfiles-workflow = ./opencode/dotfiles-workflow;
-        prolog-reasoning = ./opencode/prolog-reasoning;
-        skill-portability = ./opencode/skill-portability;
+      skills = {
+        dotfiles-workflow = ./skills/dotfiles-workflow;
+        prolog-reasoning = ./skills/prolog-reasoning;
+        skill-portability = ./skills/skill-portability;
+      };
+
+      mkSkillLinksModule = root: { lib, ... }: {
+        home.file = lib.mapAttrs' (
+          name: source:
+          lib.nameValuePair "${root}/${name}" { inherit source; }
+        ) skills;
       };
 
       opencodeModule = { ... }: {
-        programs.opencode.skills = opencodeSkills;
+        programs.opencode.skills = skills;
       };
     in
     {
       lib = {
-        inherit opencodeSkills;
-        opencodeSkillNames = builtins.attrNames opencodeSkills;
+        inherit skills;
+        skillNames = builtins.attrNames skills;
+
+        # Compatibility for existing dotfiles/consumers while the repository
+        # migrates away from the old opencode/ source tree.
+        opencodeSkills = skills;
+        opencodeSkillNames = builtins.attrNames skills;
+
+        targets = {
+          opencode = ".config/opencode/skills";
+          claude = ".claude/skills";
+          agents = ".agents/skills";
+          agent-zero = "usr/skills";
+        };
       };
 
       homeManagerModules = {
         default = opencodeModule;
         opencode = opencodeModule;
+        claude = mkSkillLinksModule ".claude/skills";
+        agents = mkSkillLinksModule ".agents/skills";
       };
     };
 }
