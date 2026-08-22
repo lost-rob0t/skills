@@ -7,6 +7,7 @@
         dotfiles-workflow = ./skills/dotfiles-workflow;
         prolog-reasoning = ./skills/prolog-reasoning;
         skill-portability = ./skills/skill-portability;
+        zara-mcp = ./skills/zara-mcp;
       };
 
       targets = {

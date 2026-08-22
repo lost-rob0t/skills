@@ -34,6 +34,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `skill-portability` - portability, dependencies, configuration, redaction, adapters.
+- `zara-mcp` - zara, mcp, stdio, http, tools, resources, prompts, debugging.
 
 ## Portable dependencies
 
