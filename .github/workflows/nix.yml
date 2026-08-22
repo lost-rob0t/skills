@@ -17,12 +17,25 @@ jobs:
       - uses: cachix/install-nix-action@v31
       - name: Validate flake metadata
         run: nix flake metadata
-      - name: Verify exported OpenCode skill names
+      - name: Verify exported canonical skill names
         run: |
           set -euo pipefail
-          test "$(nix eval --json .#lib.opencodeSkillNames)" = '["dotfiles-workflow","prolog-reasoning"]'
-      - name: Verify skill packages
+          expected='["dotfiles-workflow","prolog-reasoning","skill-portability"]'
+          test "$(nix eval --json .#lib.skillNames)" = "$expected"
+          test "$(nix eval --json .#lib.opencodeSkillNames)" = "$expected"
+      - name: Verify canonical skill packages
         run: |
           set -euo pipefail
-          test -f opencode/dotfiles-workflow/SKILL.md
-          test -f opencode/prolog-reasoning/SKILL.md
+          test -f skills/dotfiles-workflow/SKILL.md
+          test -f skills/prolog-reasoning/SKILL.md
+          test -f skills/skill-portability/SKILL.md
+      - name: Verify adapter metadata
+        run: |
+          set -euo pipefail
+          test "$(nix eval --raw .#lib.targets.opencode)" = '.config/opencode/skills'
+          test "$(nix eval --raw .#lib.targets.claude)" = '.claude/skills'
+          test "$(nix eval --raw .#lib.targets.agents)" = '.agents/skills'
+          test "$(nix eval --raw .#lib.targets.codex)" = '.codex/skills'
+          test "$(nix eval --raw .#lib.targets.cursor)" = '.cursor/skills'
+          test "$(nix eval --raw .#lib.targets.copilot)" = '.copilot/skills'
+          test "$(nix eval --raw .#lib.targets.agent-zero)" = 'usr/skills'
