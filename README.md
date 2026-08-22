@@ -27,7 +27,7 @@ AGENTS.md                   canonical contributor/agent rules
 flake.nix                   canonical catalog plus client deployment adapters
 ```
 
-Client-specific paths are deployment views. Do not maintain separate editable copies for OpenCode, Claude, `.agents`, Agent Zero, or another compatible runtime.
+Client-specific paths are deployment views. Do not maintain separate editable copies for OpenCode, Claude, Codex, Cursor, Copilot, Agent Zero, or another compatible runtime.
 
 ## Skills
 
@@ -53,12 +53,13 @@ Raw backups and redaction maps do not belong in this repository, issues, PRs, or
 
 The flake exports the canonical catalog as `lib.skills` and `lib.skillNames`. Existing consumers may continue using the compatibility aliases `lib.opencodeSkills` and `lib.opencodeSkillNames`.
 
-Current adapter metadata covers OpenCode, Claude-compatible `.claude/skills`, generic `.agents/skills`, and Agent Zero `usr/skills`. Home Manager modules are provided where the user's home directory is the correct install root.
+Per-client outputs cover OpenCode, Claude Code, generic Agent Skills, Codex, Cursor, GitHub Copilot, and Agent Zero. Fixed user-global clients have Home Manager modules under `homeManagerModules`; Agent Zero uses `lib.mkAgentZeroHomeManagerModule` because its `usr/skills` path is relative to the installation root.
 
 ```sh
 nix flake metadata
 nix eval --json .#lib.skillNames
 nix eval --json .#lib.targets
+nix eval --json .#lib.adapters
 ```
 
 New skills must be added to the canonical catalog in `flake.nix` and to CI validation in `.github/workflows/nix.yml`.
