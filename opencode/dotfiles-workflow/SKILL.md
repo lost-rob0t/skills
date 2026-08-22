@@ -65,25 +65,26 @@ For OpenCode MCP/config changes, verify the generated OpenCode behavior after ac
 
 ## Skill changes
 
-The canonical skills checkout is `$HOME/skills`. If it does not exist, initialize it by cloning the repository there:
+The canonical skills checkout is `/home/unseen/Documents/AI/skills`. If it does not exist, initialize it by cloning the repository there:
 
 ```sh
-if [ ! -d "$HOME/skills/.git" ]; then
-  if [ -e "$HOME/skills" ]; then
-    echo "$HOME/skills exists but is not a git checkout" >&2
+mkdir -p /home/unseen/Documents/AI
+if [ ! -d /home/unseen/Documents/AI/skills/.git ]; then
+  if [ -e /home/unseen/Documents/AI/skills ]; then
+    echo "/home/unseen/Documents/AI/skills exists but is not a git checkout" >&2
     exit 1
   fi
-  git clone git@github.com:lost-rob0t/skills.git "$HOME/skills"
+  git clone git@github.com:lost-rob0t/skills.git /home/unseen/Documents/AI/skills
 fi
 
-cd "$HOME/skills"
+cd /home/unseen/Documents/AI/skills
 git fetch origin
 git switch main
 git pull --ff-only origin main
 git switch -c feature/<short-purpose>
 ```
 
-Edit the relevant `SKILL.md`, support files, or the skills flake in `$HOME/skills`. Validate the skills repository, push the branch, open a PR against `main`, poll CI, and merge only when green.
+Edit the relevant `SKILL.md`, support files, or the skills flake in `/home/unseen/Documents/AI/skills`. Validate the skills repository, push the branch, open a PR against `main`, poll CI, and merge only when green.
 
 If the shipped skill revision is pinned by dotfiles, update dotfiles only after the skill PR merges. That second change is deployment metadata or a flake lock/input update. Do not duplicate the skill body in dotfiles.
 
@@ -97,7 +98,7 @@ add/change MCP server
   -> PR + green CI + merge
 
 edit/create SKILL.md
-  -> $HOME/skills (clone if absent)
+  -> /home/unseen/Documents/AI/skills (clone if absent)
   -> skill source
   -> validate skills flake
   -> PR + green CI + merge
@@ -113,6 +114,6 @@ edit/create SKILL.md
 - Never discard unrelated local work to make the workflow convenient.
 - Never bypass declarative ownership by hand-editing generated OpenCode configuration or installed skill paths.
 - Never edit a skill's durable source in dotfiles.
-- If `$HOME/skills` exists but is not the expected Git checkout, stop rather than deleting or replacing it.
+- If `/home/unseen/Documents/AI/skills` exists but is not the expected Git checkout, stop rather than deleting or replacing it.
 - If a rebuild exposes a pre-existing unrelated failure, distinguish it clearly from failures introduced by the feature branch.
 - Prefer one coherent feature branch and PR per repository change.
