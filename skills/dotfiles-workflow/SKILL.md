@@ -1,7 +1,7 @@
 ---
 name: dotfiles-workflow
 description: Edit the declarative source that actually owns an agent or system configuration. Use for dotfiles, Nix/Home Manager, MCP registration, providers, permissions, plugins, packages, generated config, or skill deployment. Discover the current user's configuration owner instead of assuming the author's dotfiles.
-compatibility: OpenCode with git; Nix/Home Manager only when the user's configuration uses them
+compatibility: Agent Skills-compatible coding agent with git; Nix/Home Manager only when the user's configuration uses them
 ---
 
 # Declarative configuration workflow
@@ -59,7 +59,7 @@ For the original `unseen` environment only:
 
 - `lost-rob0t/dotfiles` at `$HOME/.dotfiles` is the canonical personal configuration source;
 - Home Manager target `unseen@desktop` is authoritative and must not be replaced with a hostname guess;
-- `lost-rob0t/skills` is the canonical skill source.
+- `lost-rob0t/skills` at `$HOME/skills` is the canonical skill source.
 
 This compatibility path is an optimization for that environment, not a dependency imposed on other users.
 

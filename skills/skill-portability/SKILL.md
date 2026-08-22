@@ -1,7 +1,7 @@
 ---
 name: skill-portability
 description: Adapt an author-specific skill to the current user's environment without changing its intended operation. Use when a skill assumes personal dotfiles, repositories, paths, usernames, hosts, MCP registration, private infrastructure, or undeclared dependencies.
-compatibility: OpenCode with repository access; git recommended
+compatibility: Agent Skills-compatible coding agent with repository access; git recommended
 ---
 
 # Skill portability

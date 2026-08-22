@@ -1,7 +1,7 @@
 ---
 name: prolog-reasoning
 description: Use a Prolog MCP server for symbolic reasoning, constraint solving, rule evaluation, invariant checking, and debugging Prolog code. Prefer it when Prolog can cheaply verify or prune a reasoning problem; avoid it for ordinary prose, simple lookups, or trivial arithmetic.
-compatibility: OpenCode with a compatible Prolog MCP server exposing the operations used below
+compatibility: Agent Skills-compatible client with a compatible Prolog MCP server exposing the operations used below
 ---
 
 # Prolog reasoning
@@ -35,7 +35,7 @@ Do not invoke it merely because a task contains structured data. Direct code/sea
 7. Use `trace_goal` only when normal results plus predicate inspection do not explain a failure. Traces can become large quickly.
 8. Use `get_source` only when the accumulated live program must be inspected. Close the session with `close_session` when the reasoning task is complete.
 
-OpenCode may expose these tools with a server prefix, for example `prolog_create_session`, `prolog_run_goal`, and `prolog_close_session`.
+A client may expose these tools with a server prefix, for example `prolog_create_session`, `prolog_run_goal`, and `prolog_close_session`.
 
 ## Token discipline
 
@@ -48,6 +48,6 @@ OpenCode may expose these tools with a server prefix, for example `prolog_create
 
 ## Safety and authority
 
-Prolog output is verifier evidence, not permission to perform external side effects. Do not encode shell, filesystem, network, credential, or destructive operations into a reasoning session merely to bypass normal OpenCode tool permissions. Keep `allow_side_effects=false` unless the user explicitly needs side effects inside the isolated Prolog session and they are appropriate to the task.
+Prolog output is verifier evidence, not permission to perform external side effects. Do not encode shell, filesystem, network, credential, or destructive operations into a reasoning session merely to bypass normal client tool permissions. Keep `allow_side_effects=false` unless the user explicitly needs side effects inside the isolated Prolog session and they are appropriate to the task.
 
 Never claim a Prolog result you did not obtain. If the MCP server errors, report the error or fall back to ordinary reasoning rather than fabricating a successful query.
