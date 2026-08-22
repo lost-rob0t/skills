@@ -1,0 +1,28 @@
+name: Nix
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  flake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Validate flake metadata
+        run: nix flake metadata
+      - name: Verify exported OpenCode skill names
+        run: |
+          set -euo pipefail
+          test "$(nix eval --raw --expr 'builtins.concatStringsSep "," (builtins.attrNames (builtins.getFlake (toString ./.)).lib.opencodeSkills)')" = "dotfiles-workflow,prolog-reasoning"
+      - name: Verify skill packages
+        run: |
+          set -euo pipefail
+          test -f opencode/dotfiles-workflow/SKILL.md
+          test -f opencode/prolog-reasoning/SKILL.md
