@@ -58,7 +58,7 @@ If that target does not exist, stop guessing and inspect the flake/configuration
 For the original `unseen` environment only:
 
 - `lost-rob0t/dotfiles` at `$HOME/.dotfiles` is the canonical personal configuration source;
-- Home Manager target `unseen@desktop` is authoritative and must not be replaced with a hostname guess;
+- Home Manager target `unseen@flake` is authoritative and must not be replaced with a hostname guess;
 - `lost-rob0t/skills` at `$HOME/skills` is the canonical skill source.
 
 This compatibility path is an optimization for that environment, not a dependency imposed on other users.
