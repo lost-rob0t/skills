@@ -6,6 +6,7 @@
       skills = {
         dotfiles-workflow = ./skills/dotfiles-workflow;
         prolog-reasoning = ./skills/prolog-reasoning;
+        rage = ./skills/rage;
         skill-portability = ./skills/skill-portability;
         zara-mcp = ./skills/zara-mcp;
       };
