@@ -6,6 +6,7 @@
       opencodeSkills = {
         dotfiles-workflow = ./opencode/dotfiles-workflow;
         prolog-reasoning = ./opencode/prolog-reasoning;
+        rage = ./opencode/rage;
       };
 
       opencodeModule = { ... }: {
