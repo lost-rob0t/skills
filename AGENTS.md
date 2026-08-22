@@ -13,7 +13,7 @@ Prefer this semantic shape when it fits:
 3. Output
 4. Rules or workflow
 
-Front matter must identify the skill and explain when it should be selected. Keep the body concise, preferably about 80 lines or less. Move detail into `references/`, scripts, or repository docs.
+Front matter must identify the skill. The `description` field is selection metadata, not prose: use 2–8 comma-separated keywords only. Keep the body concise, preferably about 80 lines or less. Move detail into `references/`, scripts, or repository docs.
 
 ## Canonical source
 
@@ -91,6 +91,7 @@ If setup is non-trivial, keep the skill contract short and link to `references/`
 A change is complete when:
 
 - the skill still performs the intended operation;
+- its description is 2–8 comma-separated keywords with no prose;
 - personal assumptions are scoped or removed;
 - dependencies and configuration are explicit;
 - links and paths resolve;
