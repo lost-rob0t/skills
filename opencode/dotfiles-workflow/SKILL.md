@@ -55,11 +55,34 @@ git pull --ff-only origin master
 git switch -c feature/<short-purpose>
 ```
 
-After editing, rebuild the affected Home Manager profile. For the desktop profile:
+After editing, rebuild the affected Home Manager profile.
+
+### Home Manager target resolution
+
+Keep the known desktop target for the original workflow. When running as another Unix user, try the conventional `user@hostname` Home Manager target before asking for configuration details:
 
 ```sh
-nix run github:nix-community/home-manager/release-26.05 -- switch --flake '.#unseen@desktop'
+if [ "${USER:-}" = "unseen" ]; then
+  hm_target='unseen@desktop'
+else
+  hm_host="$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)"
+
+  if [ -z "${USER:-}" ] || [ -z "$hm_host" ]; then
+    echo 'Cannot infer Home Manager user/hostname target.' >&2
+    exit 2
+  fi
+
+  hm_target="${USER}@${hm_host}"
+fi
+
+nix run github:nix-community/home-manager/release-26.05 -- switch --flake ".#${hm_target}"
 ```
+
+For `$USER=unseen`, preserve `unseen@desktop`; do not replace it with a guessed hostname-derived target.
+
+For any other `$USER`, first try `$USER@$(hostname -s)`. If that target does not exist, the checkout uses a different Home Manager naming convention, or the machine is managed by a different activation workflow, stop guessing and prompt the user to describe their configuration/rebuild workflow and target name. Do not silently fall back to arbitrary flake attributes.
+
+Distinguish target-discovery failure from an actual configuration failure. If the inferred target resolves but evaluation, build, or activation fails because of the change being tested, debug that failure normally instead of asking the user how Home Manager works.
 
 For OpenCode MCP/config changes, verify the generated OpenCode behavior after activation instead of assuming evaluation was sufficient.
 
@@ -93,6 +116,7 @@ If the shipped skill revision is pinned by dotfiles, update dotfiles only after 
 add/change MCP server
   -> $HOME/.dotfiles
   -> Nix/Home Manager source
+  -> resolve Home Manager target
   -> rebuild + verify
   -> PR + green CI + merge
 
@@ -102,6 +126,7 @@ edit/create SKILL.md
   -> validate skills flake
   -> PR + green CI + merge
   -> update dotfiles flake input/lock if deployment needs the new revision
+  -> resolve Home Manager target
   -> rebuild + verify
   -> PR + green CI + merge
 ```
@@ -114,5 +139,6 @@ edit/create SKILL.md
 - Never bypass declarative ownership by hand-editing generated OpenCode configuration or installed skill paths.
 - Never edit a skill's durable source in dotfiles.
 - If `$HOME/skills` exists but is not the expected Git checkout, stop rather than deleting or replacing it.
+- If Home Manager target inference fails for a user other than `unseen`, ask for that user's actual workflow instead of guessing repeatedly.
 - If a rebuild exposes a pre-existing unrelated failure, distinguish it clearly from failures introduced by the feature branch.
 - Prefer one coherent feature branch and PR per repository change.
