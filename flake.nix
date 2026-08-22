@@ -32,13 +32,34 @@
       };
 
       adapters = {
-        opencode = { root = targets.opencode; inherit skills; };
-        claude = { root = targets.claude; inherit skills; };
-        agents = { root = targets.agents; inherit skills; };
-        codex = { root = targets.codex; inherit skills; };
-        cursor = { root = targets.cursor; inherit skills; };
-        copilot = { root = targets.copilot; inherit skills; };
-        agent-zero = { root = targets.agent-zero; inherit skills; };
+        opencode = {
+          root = targets.opencode;
+          inherit skills;
+        };
+        claude = {
+          root = targets.claude;
+          inherit skills;
+        };
+        agents = {
+          root = targets.agents;
+          inherit skills;
+        };
+        codex = {
+          root = targets.codex;
+          inherit skills;
+        };
+        cursor = {
+          root = targets.cursor;
+          inherit skills;
+        };
+        copilot = {
+          root = targets.copilot;
+          inherit skills;
+        };
+        agent-zero = {
+          root = targets.agent-zero;
+          inherit skills;
+        };
       };
     in
     {
@@ -46,9 +67,13 @@
         inherit skills targets adapters mkSkillLinksModule;
         skillNames = builtins.attrNames skills;
 
+        # Agent Zero's usr/skills path is relative to its installation root,
+        # so callers must supply that root instead of receiving a guessed path.
         mkAgentZeroHomeManagerModule = installRoot:
           mkSkillLinksModule "${installRoot}/${targets.agent-zero}";
 
+        # Compatibility for existing dotfiles/consumers while the repository
+        # migrates away from the old opencode/ source tree.
         opencodeSkills = skills;
         opencodeSkillNames = builtins.attrNames skills;
       };
