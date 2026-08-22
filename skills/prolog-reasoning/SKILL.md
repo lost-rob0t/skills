@@ -1,6 +1,6 @@
 ---
 name: prolog-reasoning
-description: Use a Prolog MCP server for symbolic reasoning, constraint solving, rule evaluation, invariant checking, and debugging Prolog code. Prefer it when Prolog can cheaply verify or prune a reasoning problem; avoid it for ordinary prose, simple lookups, or trivial arithmetic.
+description: prolog, symbolic-reasoning, constraints, invariants, verification, debugging, mcp
 compatibility: Agent Skills-compatible client with a compatible Prolog MCP server exposing the operations used below
 ---
 
