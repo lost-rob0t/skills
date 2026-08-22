@@ -9,6 +9,7 @@ This repository is the source for skills that can be installed into different ag
 A skill should describe the smallest repeatable procedure that changes an agent's behavior.
 
 - Keep `SKILL.md` short. Prefer roughly 80 lines or less when the task allows it.
+- Keep front-matter `description` extremely short: 2–8 comma-separated keywords, no prose.
 - Describe capabilities and dependencies, not one person's machine layout.
 - Put deterministic work in scripts beside the skill.
 - Put long explanations, examples, and integration notes in `references/` or `docs/`.
@@ -30,9 +31,9 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 
 ## Skills
 
-- `dotfiles-workflow` - declarative config ownership and safe repository workflow.
-- `prolog-reasoning` - bounded Prolog MCP reasoning and verification.
-- `skill-portability` - adapt author-specific skills to the current user's environment.
+- `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
+- `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
+- `skill-portability` - portability, dependencies, configuration, redaction, adapters.
 
 ## Portable dependencies
 
