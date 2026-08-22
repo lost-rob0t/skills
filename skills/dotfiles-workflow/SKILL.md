@@ -1,6 +1,6 @@
 ---
 name: dotfiles-workflow
-description: Edit the declarative source that actually owns an agent or system configuration. Use for dotfiles, Nix/Home Manager, MCP registration, providers, permissions, plugins, packages, generated config, or skill deployment. Discover the current user's configuration owner instead of assuming the author's dotfiles.
+description: dotfiles, declarative-config, nix, home-manager, mcp, deployment, permissions, plugins
 compatibility: Agent Skills-compatible coding agent with git; Nix/Home Manager only when the user's configuration uses them
 ---
 
