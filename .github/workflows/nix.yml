@@ -35,4 +35,7 @@ jobs:
           test "$(nix eval --raw .#lib.targets.opencode)" = '.config/opencode/skills'
           test "$(nix eval --raw .#lib.targets.claude)" = '.claude/skills'
           test "$(nix eval --raw .#lib.targets.agents)" = '.agents/skills'
+          test "$(nix eval --raw .#lib.targets.codex)" = '.codex/skills'
+          test "$(nix eval --raw .#lib.targets.cursor)" = '.cursor/skills'
+          test "$(nix eval --raw .#lib.targets.copilot)" = '.copilot/skills'
           test "$(nix eval --raw .#lib.targets.agent-zero)" = 'usr/skills'
