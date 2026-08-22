@@ -20,7 +20,7 @@ jobs:
       - name: Verify exported OpenCode skill names
         run: |
           set -euo pipefail
-          test "$(nix eval --raw --expr 'builtins.concatStringsSep "," (builtins.attrNames (builtins.getFlake (toString ./.)).lib.opencodeSkills)')" = "dotfiles-workflow,prolog-reasoning"
+          test "$(nix eval --json .#lib.opencodeSkillNames)" = '["dotfiles-workflow","prolog-reasoning"]'
       - name: Verify skill packages
         run: |
           set -euo pipefail
