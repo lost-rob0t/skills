@@ -15,6 +15,14 @@ Prefer this semantic shape when it fits:
 
 Front matter must identify the skill and explain when it should be selected. Keep the body concise, preferably about 80 lines or less. Move detail into `references/`, scripts, or repository docs.
 
+## Canonical source
+
+Every durable skill lives once under `skills/<name>/`.
+
+Do not create independently edited OpenCode, Claude, `.agents`, Agent Zero, or other runtime copies. Client layouts are deployment adapters derived from the canonical package. `$HOME/skills` is the canonical local checkout for this repository.
+
+See `docs/formats.md` for adapter and import rules.
+
 ## Portability
 
 Before adding or editing a skill, scan for author-specific assumptions:
@@ -37,15 +45,26 @@ Convert those assumptions into portable semantics:
 
 Do not expose private infrastructure while making a skill portable.
 
+## Imported corpora
+
+Raw agent backups are never repository content.
+
+Before importing a skill, remove target-specific operational state, credentials, tokens, private keys, client identifiers, personal identifiers, addresses, internal DNS, target hosts, scan output, session state, and collected evidence. Preserve reusable technique, tooling, sequencing, verification, scripts, references, and assets.
+
+Never paste raw private values into issues, PRs, commit messages, documentation, or CI output. Discuss the category of removed information instead.
+
 ## Repository changes
 
-For a new OpenCode skill:
+For a new skill:
 
-1. create `opencode/<name>/SKILL.md`;
-2. add it to `opencodeSkills` in `flake.nix`;
-3. update `.github/workflows/nix.yml` so CI checks the exported name and file;
-4. update README/docs only when the new behavior changes repository semantics or setup;
-5. run the narrowest relevant validation, then the full required checks.
+1. create `skills/<name>/SKILL.md` and any support files;
+2. add it to the canonical `skills` catalog in `flake.nix`;
+3. update `.github/workflows/nix.yml` so CI checks the exported name and package;
+4. add or adjust a client adapter only when current client behavior requires it;
+5. update README/docs only when the new behavior changes repository semantics or setup;
+6. run the narrowest relevant validation, then the full required checks.
+
+Existing `lib.opencodeSkills` and `lib.opencodeSkillNames` are compatibility aliases. They must reference the canonical catalog, not a second source tree.
 
 Do not edit generated installed copies of skills as their durable source.
 
@@ -75,5 +94,5 @@ A change is complete when:
 - personal assumptions are scoped or removed;
 - dependencies and configuration are explicit;
 - links and paths resolve;
-- the flake catalog and CI agree;
+- the canonical flake catalog, compatibility aliases, adapters, and CI agree;
 - required checks pass.
