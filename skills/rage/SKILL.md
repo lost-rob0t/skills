@@ -17,7 +17,9 @@ Research-to-merge loop for one eligible issue at a time. Evidence outranks the i
 
 ## Start evidence
 
-Before research or implementation, create/update `rage/<work-log>.org` and record:
+Before research or implementation, enter the intended `rage/<issue>-<slug>` branch and initialize the run log with this skill's `scripts/init-run.py <issue> <slug> --repo <checkout>` helper. It records the actual full HEAD SHA and branch, refuses branch mismatches, and refuses to overwrite an existing run log unless an append is explicitly requested.
+
+The resulting evidence is:
 
 ```org
 * Run identity
