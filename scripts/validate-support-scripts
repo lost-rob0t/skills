@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="${1:-skills}"
+test -d "$root"
+
+while IFS= read -r -d '' file; do
+  case "$file" in
+    *.py)
+      python3 - "$file" <<'PY'
+import ast
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+PY
+      ;;
+    *.sh|*.bash)
+      bash -n "$file"
+      ;;
+  esac
+done < <(find "$root" -type f -path '*/scripts/*' -print0)
+
+echo "support scripts syntax: ok"
