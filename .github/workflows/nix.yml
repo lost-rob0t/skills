@@ -20,7 +20,7 @@ jobs:
       - name: Verify exported canonical skill names
         run: |
           set -euo pipefail
-          expected='["dotfiles-workflow","prolog-reasoning","rage","skill-portability","zara-mcp"]'
+          expected='["dotfiles-workflow","prolog-reasoning","rage","skill-portability","spec","zara-mcp"]'
           test "$(nix eval --json .#lib.skillNames)" = "$expected"
           test "$(nix eval --json .#lib.opencodeSkillNames)" = "$expected"
       - name: Verify canonical skill packages
@@ -30,6 +30,7 @@ jobs:
           test -f skills/prolog-reasoning/SKILL.md
           test -f skills/rage/SKILL.md
           test -f skills/skill-portability/SKILL.md
+          test -f skills/spec/SKILL.md
           test -f skills/zara-mcp/SKILL.md
       - name: Verify adapter metadata
         run: |

@@ -8,6 +8,7 @@
         prolog-reasoning = ./skills/prolog-reasoning;
         rage = ./skills/rage;
         skill-portability = ./skills/skill-portability;
+        spec = ./skills/spec;
         zara-mcp = ./skills/zara-mcp;
       };
 
