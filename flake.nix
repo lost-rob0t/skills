@@ -16,6 +16,7 @@
         starintel-ingest = ./skills/starintel-ingest;
         starintel-local-search = ./skills/starintel-local-search;
         starintel-osint = ./skills/starintel-osint;
+        sudo = ./skills/sudo;
         task-steward-bootstrap = ./skills/task-steward-bootstrap;
         task-steward-worker = ./skills/task-steward-worker;
         zara-mcp = ./skills/zara-mcp;
