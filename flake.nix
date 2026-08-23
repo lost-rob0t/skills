@@ -9,6 +9,13 @@
         rage = ./skills/rage;
         skill-portability = ./skills/skill-portability;
         spec = ./skills/spec;
+        star-lang = ./skills/star-lang;
+        starintel-actor-create = ./skills/starintel-actor-create;
+        starintel-auto-dig = ./skills/starintel-auto-dig;
+        starintel-document-create = ./skills/starintel-document-create;
+        starintel-ingest = ./skills/starintel-ingest;
+        starintel-local-search = ./skills/starintel-local-search;
+        starintel-osint = ./skills/starintel-osint;
         zara-mcp = ./skills/zara-mcp;
       };
 
