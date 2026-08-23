@@ -10,12 +10,12 @@ Operate and verify Zara's native MCP client without confusing it with the callin
 
 ## Workflow
 
-1. Confirm `zara mcp --help` and `zara mcp status` exist.
+1. Run this skill's read-only `scripts/doctor.py [SERVER]` helper. Without a server it checks `zara mcp --help` and status; with a server it also checks inspect, tools, resources, and prompts. It does not mutate configuration and redacts common bearer/URL/query secret shapes if diagnostic output is requested.
 2. Inspect before mutation: `list`, `status`, `inspect SERVER`, `tools SERVER`, `resources SERVER`, `prompts SERVER`.
 3. Configure the smallest required server through Zara's MCP surface.
 4. Keep credentials in environment variables or an appropriate secret source; never commit or print them.
 5. Verify the server becomes usable and expected capabilities are discovered.
-6. After add/enable/disable/remove, rerun status plus relevant inspection.
+6. After add/enable/disable/remove, rerun the doctor plus relevant inspection.
 7. For code changes, run focused tests, the repository gate, and exact-head CI.
 
 ## Transports
@@ -55,11 +55,9 @@ zara mcp remove SERVER
 
 ## Debugging
 
-1. `zara mcp status`
-2. `zara mcp inspect SERVER`
-3. inspect tools/resources/prompts
-4. inspect Zara's lifecycle/error evidence
-5. inspect the server process or endpoint after locating the failing boundary
+1. run `scripts/doctor.py [SERVER]`;
+2. inspect Zara's lifecycle/error evidence;
+3. inspect the server process or endpoint after locating the failing boundary.
 
 For stdio, verify executable/arguments under Zara's actual user and environment. For HTTP, verify reachability and secret availability without printing the secret.
 
