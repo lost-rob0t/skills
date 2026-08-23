@@ -25,7 +25,7 @@ When a writable temporary filesystem exists, write the spec to:
 ${TMPDIR:-/tmp}/spec/<task-slug>/SPEC.md
 ```
 
-Create parent directories as needed. Keep scratch notes beside it rather than in chat. If no writable temporary filesystem exists, return the spec directly.
+Use this skill's `scripts/init-spec.py '<task>'` helper to create the canonical path and section scaffold. It refuses to overwrite an existing `SPEC.md` unless replacement is explicitly requested. Keep scratch notes beside it rather than in chat. If no writable temporary filesystem exists, return the spec directly.
 
 End with the spec path and any genuine unresolved blockers.
 
