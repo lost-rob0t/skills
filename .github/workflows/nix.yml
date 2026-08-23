@@ -15,6 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
+      - name: Install pinned validator runner
+        run: python3 -m pip install --disable-pip-version-check 'uv==0.12.0'
+      - name: Validate every canonical skill
+        run: bash scripts/validate-skills
+      - name: Reject unknown skill frontmatter
+        run: |
+          set -euo pipefail
+          if output="$(bash scripts/validate-skills tests/fixtures/unknown-frontmatter 2>&1)"; then
+            echo 'expected unknown-frontmatter fixture to fail validation' >&2
+            exit 1
+          fi
+          printf '%s\n' "$output"
+          grep -Fq 'Unexpected fields in frontmatter: unexpected-key' <<<"$output"
       - name: Validate flake metadata
         run: nix flake metadata
       - name: Verify exported canonical skill names

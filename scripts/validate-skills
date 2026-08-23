@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly AGENT_SKILLS_REV="69ef37e9424c0a7ea9dd2293b559e43ec8176379"
+readonly SKILLS_REF_SOURCE="git+https://github.com/agentskills/agentskills.git@${AGENT_SKILLS_REV}#subdirectory=skills-ref"
+readonly PYTHON_VERSION="3.12"
+
+command -v uvx >/dev/null 2>&1 || {
+  echo "uvx is required; install the pinned CI runner with: python3 -m pip install 'uv==0.12.0'" >&2
+  exit 2
+}
+
+if (( $# > 0 )); then
+  skill_dirs=("$@")
+else
+  shopt -s nullglob
+  skill_dirs=(skills/*)
+fi
+
+if (( ${#skill_dirs[@]} == 0 )); then
+  echo "no skill directories found" >&2
+  exit 2
+fi
+
+status=0
+for skill_dir in "${skill_dirs[@]}"; do
+  if [[ ! -d "$skill_dir" ]]; then
+    echo "not a skill directory: $skill_dir" >&2
+    status=1
+    continue
+  fi
+
+  if ! uvx --python "$PYTHON_VERSION" --from "$SKILLS_REF_SOURCE" skills-ref validate "$skill_dir"; then
+    status=1
+  fi
+done
+
+exit "$status"

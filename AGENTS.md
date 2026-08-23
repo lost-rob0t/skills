@@ -21,7 +21,7 @@ Every durable skill lives once under `skills/<name>/`.
 
 Do not create independently edited OpenCode, Claude, `.agents`, Agent Zero, or other runtime copies. Client layouts are deployment adapters derived from the canonical package. `$HOME/skills` is the canonical local checkout for this repository.
 
-See `docs/formats.md` for adapter and import rules.
+See `docs/formats.md` for adapter, validation, and import rules.
 
 ## Portability
 
@@ -88,8 +88,11 @@ If setup is non-trivial, keep the skill contract short and link to `references/`
 
 ## Verification
 
+Run the repository-authoritative manifest gate with `bash scripts/validate-skills`; its Agent Skills specification/reference-validator revision is pinned in `docs/formats.md`.
+
 A change is complete when:
 
+- every canonical skill passes `bash scripts/validate-skills`;
 - the skill still performs the intended operation;
 - its description is 2–8 comma-separated keywords with no prose;
 - personal assumptions are scoped or removed;

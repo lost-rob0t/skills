@@ -16,6 +16,21 @@ skills/<skill-id>/
 
 The canonical local checkout for editing this repository is `$HOME/skills`. Clone `lost-rob0t/skills` there if it is absent. If `$HOME/skills` already exists and is not the expected checkout, stop rather than replacing it.
 
+## Validation contract
+
+Canonical `SKILL.md` format follows the Agent Skills specification and reference validator pinned to `agentskills/agentskills@69ef37e9424c0a7ea9dd2293b559e43ec8176379`. That snapshot permits `name`, `description`, `license`, `compatibility`, `metadata`, and experimental `allowed-tools` frontmatter. Unknown top-level keys are invalid.
+
+Repository validation runs the upstream `skills-ref` package from that exact commit rather than whichever validator happens to ship with a local agent client. This intentionally avoids client-specific drift such as validators that reject spec-valid `compatibility` metadata.
+
+CI uses `uv==0.12.0` and Python 3.12 to run the pinned validator. Reproduce the gate locally with:
+
+```sh
+python3 -m pip install 'uv==0.12.0'
+bash scripts/validate-skills
+```
+
+`bash scripts/validate-skills <skill-dir>...` validates an explicit subset. The no-argument form validates every directory under `skills/`. Keep the negative fixture in `tests/fixtures/unknown-frontmatter/`: CI must prove the pinned validator rejects its deliberately unsupported key.
+
 ## Adapter targets
 
 The verified target matrix is:
