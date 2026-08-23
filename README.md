@@ -35,6 +35,13 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `rage` - rage, issues, research, design, tdd, verification, ci, merge.
 - `skill-portability` - portability, dependencies, configuration, redaction, adapters.
+- `star-lang` - star-lang, common-lisp, compiler, runtime, actors, manifests, nix.
+- `starintel-actor-create` - starintel, actors, star-lang, sento, plugins, manifests, testing.
+- `starintel-auto-dig` - starintel, auto-dig, osint, recursion, documents, relations, validation.
+- `starintel-document-create` - starintel, documents, relations, schema, validation, local-db.
+- `starintel-ingest` - starintel, ingest, jsonl, local-db, remote-api, validation.
+- `starintel-local-search` - starintel, local-search, jsonl, ndjson, relations, corpus.
+- `starintel-osint` - starintel, osint, research, evidence, provenance, corroboration, sources.
 - `zara-mcp` - zara, mcp, stdio, http, tools, resources, prompts, debugging.
 
 ## Portable dependencies
