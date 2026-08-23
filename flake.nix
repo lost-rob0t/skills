@@ -16,6 +16,8 @@
         starintel-ingest = ./skills/starintel-ingest;
         starintel-local-search = ./skills/starintel-local-search;
         starintel-osint = ./skills/starintel-osint;
+        task-steward-bootstrap = ./skills/task-steward-bootstrap;
+        task-steward-worker = ./skills/task-steward-worker;
         zara-mcp = ./skills/zara-mcp;
       };
 
