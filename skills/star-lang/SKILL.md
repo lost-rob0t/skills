@@ -35,7 +35,7 @@ A loaded manifest, tested Common Lisp runtime change, or executable local actor 
 
 5. For remote imports, require the exact library name, version, full SHA-256 digest, and explicit `--allow-network`; keep HTTPS and cache verification intact.
 6. For actors, use the final `starlang-runtime` local API described in [references/runtime.md](references/runtime.md). Source-level actor lowering, external dispatch, supervision, and remoting remain partly prototype-owned; extend the current authority instead of creating a parallel path.
-7. Run focused ASDF tests, then `nix run .#tests` and `nix flake check -L`.
+7. Run focused ASDF tests, then use this skill's `scripts/verify.py --repo <star-lang-checkout>` helper for the canonical `nix run .#tests` plus `nix flake check -L` gate. It refuses to run outside a flake checkout and stops at the first failing stage.
 
 ## Rules
 
