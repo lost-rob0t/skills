@@ -42,16 +42,9 @@ Do not require `lost-rob0t/dotfiles` for another user. State required dependenci
 
 ## Home Manager
 
-When the user's setup uses Home Manager, discover its flake target or activation workflow.
+When the user's setup uses Home Manager, discover its flake target or activation workflow. Use this skill's `scripts/discover-home-manager.py --repo <configuration-root>` helper when the flake exports `homeConfigurations`. It evaluates the real exported names, accepts the conventional `USER@hostname` target only when it actually exists, and accepts a lone exported target without inventing a hostname-derived name.
 
-A conventional target may be tried as:
-
-```sh
-hm_host="$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)"
-hm_target="${USER:?USER is unset}@${hm_host:?hostname unavailable}"
-```
-
-If that target does not exist, stop guessing and inspect the flake/configuration or ask for the actual target. Distinguish target discovery failure from a real evaluation/build failure.
+If discovery is ambiguous or evaluation fails, stop guessing and inspect the flake/configuration or ask for the actual target. Distinguish target discovery failure from a real evaluation/build failure.
 
 ### Owner compatibility
 
