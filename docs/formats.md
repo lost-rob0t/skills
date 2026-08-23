@@ -45,11 +45,23 @@ The verified target matrix is:
 | GitHub Copilot | `~/.copilot/skills/<skill-id>/` or `~/.agents/skills/<skill-id>/` |
 | Agent Zero | `usr/skills/<skill-id>/` inside the Agent Zero installation |
 
+Project-local adapters used by the Task Steward bootstrap are:
+
+| Target | Project deployment view |
+| --- | --- |
+| OpenCode | `.opencode/skills/<skill-id>/` |
+| Agent Skills generic / OpenCode-compatible | `.agents/skills/<skill-id>/` |
+| Agent Zero | `.a0proj/skills/<skill-id>/` |
+
+`.a0/skills/` is not treated as Agent Zero's canonical project discovery path. It may be generated only as an explicit compatibility view for a project that requires that convention, while `.a0proj/skills/` remains the Agent Zero project adapter.
+
 The flake exports a Home Manager module for each user-global fixed path. Agent Zero is different: `usr/skills` is relative to its installation root, so use `lib.mkAgentZeroHomeManagerModule <install-root>` rather than guessing where Agent Zero lives.
 
 OpenCode, Codex, Cursor, and Copilot can all consume the generic `~/.agents/skills` convention. Prefer that shared adapter when one installed tree should serve several clients. Use a client-native adapter when isolation or client-specific precedence matters. Claude Code still needs its Claude-compatible path for reliable personal discovery.
 
 These targets share the open `SKILL.md` model. When a client needs extra metadata or installation behavior, generate or configure that adapter from the canonical package. Do not fork the instructions merely to satisfy a client path convention.
+
+A ChatGPT-style or other tool-hosted operator has no repository-defined filesystem discovery path. It should consume the canonical skill contract through the host's available context/tooling and use the same external protocol. Do not invent a fake client directory just to claim compatibility.
 
 Additional clients must be added only after verifying their current documented discovery and metadata behavior.
 

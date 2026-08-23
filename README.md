@@ -42,6 +42,8 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `starintel-ingest` - starintel, ingest, jsonl, local-db, remote-api, validation.
 - `starintel-local-search` - starintel, local-search, jsonl, ndjson, relations, corpus.
 - `starintel-osint` - starintel, osint, research, evidence, provenance, corroboration, sources.
+- `task-steward-bootstrap` - steward, bootstrap, a0, opencode, agents, adapters.
+- `task-steward-worker` - steward, rage, leases, fencing, heartbeat, receipts.
 - `zara-mcp` - zara, mcp, stdio, http, tools, resources, prompts, debugging.
 
 ## Portable dependencies
