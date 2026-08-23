@@ -23,7 +23,7 @@ A skill whose dependencies and configuration requirements are explicit, whose pe
 ## Workflow
 
 1. Read the target skill and its local docs/support files.
-2. Find author-specific assumptions: repository owners, dotfiles, usernames, hosts, absolute paths, private services, config managers, MCP registrations, and undeclared commands.
+2. Find author-specific assumptions: repository owners, dotfiles, usernames, hosts, absolute paths, private services, config managers, MCP registrations, and undeclared commands. Use this skill's `scripts/audit.py <skill-dir> --literal <author-or-host>` helper for repeatable path/private-network/literal scanning; it reports categories and locations without echoing matched content.
 3. Classify each assumption as a dependency, configuration detail, workflow rule, or optional owner optimization.
 4. Rewrite dependencies as capabilities the skill actually consumes.
 5. Replace personal paths/config with discovery, configurable values, or the current user's actual declarative source.
@@ -31,7 +31,7 @@ A skill whose dependencies and configuration requirements are explicit, whose pe
 7. Put non-obvious install/config instructions in nearby docs or `references/`; keep only the required dependency and common path in `SKILL.md`.
 8. Preserve useful author-specific behavior only under an explicit compatibility condition.
 9. Update repository indexes, exports, and validation when the skill package or catalog changes.
-10. Verify the intended operation still works and search the result for stale personal coupling.
+10. Verify the intended operation still works and rerun the portability audit with relevant literals before completion.
 
 ## Rewrite rule
 
