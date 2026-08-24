@@ -27,22 +27,9 @@ A source ledger, canonical documents and relations, a `research-pass`, a green g
 4. Resolve identities and split material into exact document dtypes.
 5. Use `starintel-document-create` for canonical documents and explicit relations.
 6. Add or update a `research-pass` recording the question, method, findings, supporting and counterevidence IDs, unresolved target IDs, agent identity, iteration, start/end times, and coverage gaps.
-7. Run:
-
-   ```bash
-   nimble buildFast
-   bin/validate-for-merge --site
-   ```
-
+7. Use this skill's `scripts/verify.py --repo <auto-dig-checkout>` helper for the canonical local `nimble buildFast` plus `bin/validate-for-merge --site` gate. It validates the checkout, logs the exact argument vectors, and stops on the first failed stage.
 8. When remote publication is part of the request, use `starintel-ingest` and preserve accepted, queued, failed, and persisted states separately.
-9. Generate the next deterministic frontier:
-
-   ```bash
-   python3 scripts/starintel.py select-targets \
-     --query '<current subject>' --limit 20 \
-     --emit-documents --output recursive-targets.jsonl
-   ```
-
+9. Generate the next deterministic frontier with the Auto-Dig repository's maintained `python3 scripts/starintel.py select-targets --query '<current subject>' --limit 20 --emit-documents --output recursive-targets.jsonl` operation.
 10. Review and import accepted target documents through the canonical batch path, then publish through the repository's branch/PR workflow when requested.
 
 ## Rules

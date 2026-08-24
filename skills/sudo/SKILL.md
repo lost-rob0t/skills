@@ -23,15 +23,10 @@ Return the command's exit status and observable result. Never return, store, or 
 
 1. Resolve the requested executable and arguments. Separate compound shell syntax, review the target, and reduce the operation to the least privilege needed.
 2. Treat `sudo` as a request for elevated privilege, not permission to collect credentials. State the exact command and expected effect before a state-changing operation.
-3. Determine the common desktop portal with this small capability probe, rather than assuming a desktop or backend:
-
-   ```sh
-   portal="$(if command -v busctl >/dev/null 2>&1 && busctl --user --quiet --no-pager status org.freedesktop.portal.Desktop >/dev/null 2>&1; then printf xdg-desktop-portal; elif command -v gdbus >/dev/null 2>&1 && gdbus call --session --dest org.freedesktop.portal.Desktop --object-path /org/freedesktop/portal/desktop --method org.freedesktop.DBus.Peer.Ping >/dev/null 2>&1; then printf xdg-desktop-portal; fi)"
-   ```
-
-   If `portal` is empty or `pkexec` is unavailable, stop. When the operation is not already exposed by a polkit-aware service, invoke the resolved `pkexec` with `--disable-internal-agent` and the exact executable plus arguments. This requires the session's graphical polkit agent and prevents a textual password fallback.
-4. If the user specifically requires `sudo` semantics, use `sudo -n` only when an existing authorization can satisfy the command without prompting. Otherwise stop and ask the user to perform it locally; never use `sudo -S`, `SUDO_ASKPASS`, shell-embedded passwords, or password files.
-5. Verify the result without privilege when possible. Check ownership, permissions, and generated state so a root-owned artifact is not mistaken for a complete operation.
+3. Run this skill's read-only `scripts/probe.py --json` helper. It checks `pkexec`, desktop display state, and the common XDG Desktop Portal broker without requesting elevation or collecting credentials. If the probe is not ready, stop. The probe intentionally does not claim it can generically prove a registered polkit agent.
+4. When the operation is not already exposed by a polkit-aware service, invoke the resolved `pkexec` with `--disable-internal-agent` and the exact executable plus arguments. This requires the session's graphical polkit agent and prevents a textual password fallback.
+5. If the user specifically requires `sudo` semantics, use `sudo -n` only when an existing authorization can satisfy the command without prompting. Otherwise stop and ask the user to perform it locally; never use `sudo -S`, `SUDO_ASKPASS`, shell-embedded passwords, or password files.
+6. Verify the result without privilege when possible. Check ownership, permissions, and generated state so a root-owned artifact is not mistaken for a complete operation.
 
 ## Rules
 
