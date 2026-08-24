@@ -5,6 +5,10 @@
     let
       skills = {
         adadr = ./skills/adadr;
+        activitywatch-analyze = ./skills/activitywatch-analyze;
+        activitywatch-group = ./skills/activitywatch-group;
+        activitywatch-productivity = ./skills/activitywatch-productivity;
+        activitywatch-visualize = ./skills/activitywatch-visualize;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
         prolog-reasoning = ./skills/prolog-reasoning;

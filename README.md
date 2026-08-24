@@ -31,6 +31,10 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 
 ## Skills
 
+- `activitywatch-analyze` - activitywatch, analysis, time-use, workflow-patterns, privacy.
+- `activitywatch-group` - activitywatch, window-groups, qtile, clustering, routing.
+- `activitywatch-productivity` - activitywatch, productivity, friction, routines, recommendations.
+- `activitywatch-visualize` - activitywatch, visualization, timelines, heatmaps, privacy.
 - `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
