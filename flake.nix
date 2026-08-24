@@ -7,7 +7,12 @@
         adadr = ./skills/adadr;
         dotfiles-workflow = ./skills/dotfiles-workflow;
         prolog-reasoning = ./skills/prolog-reasoning;
+        qtile-confirm = ./skills/qtile-confirm;
+        qtile-debug = ./skills/qtile-debug;
+        qtile-edit = ./skills/qtile-edit;
+        qtile-reload = ./skills/qtile-reload;
         rage = ./skills/rage;
+        skill-edit = ./skills/skill-edit;
         skill-portability = ./skills/skill-portability;
         spec = ./skills/spec;
         star-lang = ./skills/star-lang;

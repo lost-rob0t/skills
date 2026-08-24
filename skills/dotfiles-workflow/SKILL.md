@@ -33,12 +33,14 @@ Do not require `lost-rob0t/dotfiles` for another user. State required dependenci
 3. If the capability is absent, configure the user's existing system when authorized, otherwise provide the minimum setup required.
 4. Protect unrelated local changes.
 5. Update the repository's default branch with a fast-forward-only pull when appropriate.
-6. Create a fresh feature branch for the coherent change.
+6. Create a fresh Gitflow-style `feature/<short-name>` branch for the coherent change.
 7. Edit the declarative source, never only its generated target.
-8. Run the narrowest useful validation, then required repository checks.
+8. Run the narrowest useful validation, then all required repository checks.
 9. Verify generated/runtime behavior after activation or deployment.
-10. Commit, push, and open a PR when the repository workflow uses PRs.
-11. Merge only when the current head is mergeable and required checks are green.
+10. Review `git status`, `git diff`, and recent history; commit only intended changes.
+11. Push the feature branch and open a pull request with `gh`; do not push directly to the default branch.
+12. Wait for every required check with `gh pr checks <number> --watch`. Fix failures on the same branch and rerun validation.
+13. Merge only after all required checks are green, then delete the remote feature branch.
 
 ## Home Manager
 
