@@ -4,6 +4,7 @@
   outputs = { self }:
     let
       skills = {
+        adadr = ./skills/adadr;
         dotfiles-workflow = ./skills/dotfiles-workflow;
         prolog-reasoning = ./skills/prolog-reasoning;
         rage = ./skills/rage;
