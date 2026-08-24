@@ -39,12 +39,13 @@ jobs:
       - name: Verify exported canonical skill names
         run: |
           set -euo pipefail
-          expected='["dotfiles-workflow","prolog-reasoning","rage","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","sudo","task-steward-bootstrap","task-steward-worker","zara-mcp"]'
+          expected='["adadr","dotfiles-workflow","prolog-reasoning","rage","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","sudo","task-steward-bootstrap","task-steward-worker","zara-mcp"]'
           test "$(nix eval --json .#lib.skillNames)" = "$expected"
           test "$(nix eval --json .#lib.opencodeSkillNames)" = "$expected"
       - name: Verify canonical skill packages
         run: |
           set -euo pipefail
+          test -f skills/adadr/SKILL.md
           test -f skills/dotfiles-workflow/SKILL.md
           test -f skills/prolog-reasoning/SKILL.md
           test -f skills/rage/SKILL.md
