@@ -33,7 +33,12 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
+- `qtile-confirm` - qtile, screenshots, vision, visual-regression, bar-layout.
+- `qtile-debug` - qtile, diagnostics, logs, IPC, crash-analysis.
+- `qtile-edit` - qtile, literate-config, tangle, configuration, tests.
+- `qtile-reload` - qtile, reload, IPC, validation, runtime-verification.
 - `rage` - rage, issues, research, design, tdd, verification, ci, merge.
+- `skill-edit` - skills, editing, validation, gitflow, pull-request, CI.
 - `skill-portability` - portability, dependencies, configuration, redaction, adapters.
 - `star-lang` - star-lang, common-lisp, compiler, runtime, actors, manifests, nix.
 - `starintel-actor-create` - starintel, actors, star-lang, sento, plugins, manifests, testing.
