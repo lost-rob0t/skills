@@ -32,13 +32,16 @@ The start SHA is immutable. Keep failed iterations and decisive evidence visible
 
 ## ADADR architecture loop
 
-Run `adadr` after queue selection/start evidence and before implementation. ADADR owns Analyze -> Design -> Adversarial review -> Decision gate -> Realize semantics.
+Load `adadr` after queue selection/start evidence and before architecture or implementation work.
 
-For projects with separate research/design governance, enforce:
+First execute ADADR's control-plane discovery gate. If the project has no defined/used research-design approval location or workflow, stop this issue and ask the user to choose **ADADR** or **Auto-RAGE**. Do not invent a directory and do not silently choose a mode.
 
-`research -> explicit research approval -> RAGE derives design -> explicit design approval -> implementation`
+- **ADADR**: `research -> explicit research approval -> RAGE produces design -> explicit design approval -> implementation`.
+- **Auto-RAGE**: RAGE still performs the complete Analyze -> Design -> Adversarial review -> Decision -> Realize loop, but records its own software-design decision rather than waiting for human approval.
 
-Research approval does not authorize implementation. Missing design approval blocks code but must not idle unrelated eligible backlog work.
+When a project already defines and uses a human-gated control plane, use ADADR mode without asking again. When a durable project instruction already selects Auto-RAGE, use that mode without asking again.
+
+Research approval does not authorize implementation. Missing design approval in ADADR mode blocks code but must not idle unrelated eligible backlog work.
 
 If research or implementation evidence disproves the architecture, return through ADADR rather than coding around the contradiction.
 
@@ -68,7 +71,7 @@ Old-SHA green CI is stale. Merge only when acceptance criteria, local gates, mer
 
 ## Failure handling
 
-For ordinary implementation defects, fix within the approved design and rerun the gate.
+For ordinary implementation defects, fix within the approved/recorded design and rerun the gate.
 
 For design-invalidating failures:
 
@@ -77,7 +80,7 @@ For design-invalidating failures:
 3. stop extending that implementation attempt;
 4. restart the canonical ADADR loop as a new numbered iteration;
 5. write replacement tests before replacement implementation;
-6. obtain any newly required approval;
+6. obtain any approval required by the selected mode;
 7. run the complete exact-head gate again.
 
 After merge, record the merge SHA, update/close the consumed issue and parent roadmap state, then re-read the queue before consuming another issue.
@@ -86,7 +89,9 @@ After merge, record the merge SHA, update/close the consumed issue and parent ro
 
 - Repository `AGENTS.md`, branch policy, permissions, and gates remain authoritative.
 - The canonical `adadr` skill is mandatory for RAGE architecture reasoning.
-- Never autonomously cross an explicit research or design approval gate.
+- Never invent an ADADR control-plane directory merely because one is missing.
+- Never silently choose Auto-RAGE.
+- Never autonomously cross an explicit research or design approval gate in ADADR mode.
 - Never merge red, queued, pending, stale, or wrong-head CI.
 - Never discard unrelated user work while abandoning a failed attempt.
 - Never hide architecture changes inside implementation patches; update canonical design evidence first.
