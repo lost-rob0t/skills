@@ -1,32 +1,31 @@
 ---
 name: adadr
 description: analyze, design, adversarial-review, decision-gate, realize
-compatibility: Agent Skills-compatible engineering or research agent with repository access, evidence gathering, and project approval metadata
+compatibility: Agent Skills-compatible software engineering agent with repository access, evidence gathering, and project approval metadata
 ---
 
 # ADADR
 
-Evidence-driven architecture loop. Analysis may invalidate the inherited request; approval gates may block realization.
+Evidence-driven software architecture loop.
 
-## Input
+## Control-plane discovery gate
 
-- one bounded problem, research question, defect, or design proposal;
-- current repository instructions and authoritative state;
-- existing research/design artifacts and approval evidence;
-- tests, runtime evidence, specifications, and primary sources as applicable.
+Before architecture work, discover the project's canonical location or workflow for research, design, approval state, and implementation promotion. Use repository instructions, project configuration, or current authoritative project state.
 
-## Output
+Do not invent a new `research/`, `design/`, `adadr/`, or approval directory just to satisfy this skill.
 
-- explicit evidence and unknowns;
-- a reviewable design with alternatives and acceptance criteria;
-- an approval/decision state;
-- implementation only when the required decision gate is satisfied.
+If no canonical location/workflow is defined, or the defined location is not actually used by the project, stop before Analyze and ask the user to choose one mode:
+
+1. **ADADR** — human-gated software design. Research approval and design approval are explicit user gates.
+2. **Auto-RAGE** — the coding worker runs the complete ADADR software-design loop itself and records the research, design, review, decision, and verification evidence without stopping for user approval.
+
+Persist the selected mode in durable project instructions/configuration when authorized so future workers do not ask again. Never silently choose Auto-RAGE.
 
 ## Loop
 
 ### A — Analyze
 
-Establish the real problem before proposing architecture. Inspect current code/tests, existing research/design, recent changes, production evidence, relevant specifications, and serious alternatives. Separate verified facts, inference, contradictions, and unknowns. For defects, prefer a deterministic failing regression as primary evidence.
+Establish the real problem before proposing architecture. Inspect current code/tests, existing research/design, recent changes, runtime evidence, relevant specifications, and serious alternatives. Separate verified facts, inference, contradictions, and unknowns. For defects, prefer a deterministic failing regression as primary evidence.
 
 ### D — Design
 
@@ -34,43 +33,37 @@ Derive the smallest coherent design from the evidence. Define ownership and stat
 
 ### A — Adversarial review
 
-Attack the design before coding. Construct counterexamples and inspect race, stale-state, partial-failure, cancellation, restart, security, provenance, compatibility, and operational failure cases. Compare the proposal against existing architecture and current implementation. If the design fails, revise it and repeat this phase; never patch around a disproved design.
+Attack the design before coding. Construct counterexamples and inspect race, stale-state, partial-failure, cancellation, restart, security, provenance, compatibility, and operational failure cases. If the design fails, revise it and repeat this phase.
 
 ### D — Decision gate
 
-Resolve the architecture state using the repository's real governance. Approval, implementation-slot state, and green validation are distinct.
+In **ADADR mode**, use the project's real human approval state. Research approval authorizes design work only; design approval authorizes implementation within that scope only. Missing approval blocks implementation.
 
-- `APPROVED`: realization may proceed when all other gates pass.
-- `REJECTED`: record evidence and return to Analyze if the problem still requires a solution.
-- `PENDING` or absent required authority: stop realization; continue only non-conflicting eligible work.
-- `SUPERSEDED`: follow the replacement artifact.
+In **Auto-RAGE mode**, the worker may record its own software-design decision after adversarial review, but it must still produce the explicit decision record before implementation.
 
-Never infer approval from a merge, green CI, an existing file, or model confidence.
+Never infer human approval from a merge, green CI, an existing file, or model confidence.
 
 ### R — Realize
 
-Implement only the approved design, using the repository's required implementation workflow. Keep changes traceable to design acceptance criteria. If implementation evidence disproves the design, stop, preserve the evidence, return to Analyze, and start a new iteration rather than silently drifting architecture.
+Implement only the approved/recorded design using the repository's required implementation workflow. Keep changes traceable to design acceptance criteria. If implementation evidence disproves the design, preserve the evidence and return to Analyze rather than silently drifting architecture.
 
-## Research → design → implementation governance
+## Human-gated progression
 
-When a project has separate research and design authority, use this strict progression:
+`research -> explicit research approval -> RAGE produces design -> explicit design approval -> implementation`
 
-1. research reaches reviewable evidence;
-2. required human/operator research approval is recorded;
-3. a RAGE worker may derive the design from that approved research;
-4. required human/operator design approval is recorded;
-5. only then may implementation begin.
+## Auto-RAGE progression
 
-A research approval authorizes design work, not implementation. A design approval authorizes realization within the approved scope, not unrelated architecture changes.
+`research -> design -> adversarial review -> recorded worker decision -> implementation`
 
 ## RAGE integration
 
-When invoked by RAGE, ADADR owns the architecture reasoning phases while RAGE owns queue selection, run identity, TDD discipline, exact-head verification, PR/merge handling, and backlog continuation. RAGE must load and follow this skill instead of reproducing a weaker prompt-local ADADR variant.
+When invoked by RAGE, ADADR owns control-plane discovery and architecture reasoning. RAGE owns queue selection, run identity, TDD discipline, exact-head verification, pull-request handling, merge gates, and backlog continuation.
 
 ## Rules
 
 - Repository instructions and current evidence outrank remembered architecture.
-- Bug-first/TDD-first repository policy may establish evidence before Analyze; ADADR does not weaken it.
-- Do not conceal architecture changes inside implementation patches.
-- Do not proceed through a required human approval gate autonomously.
-- Prefer canonical project research/design artifacts over issue or PR prose when the repository defines them as authoritative.
+- Bug-first/TDD-first repository policy may establish evidence before Analyze.
+- Do not invent an ADADR directory/control plane when none exists.
+- Do not silently choose Auto-RAGE.
+- Do not hide architecture changes inside implementation patches.
+- Prefer canonical project research/design artifacts when the repository defines them as authoritative.
