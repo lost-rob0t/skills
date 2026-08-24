@@ -81,7 +81,10 @@ Before committing an imported skill:
 4. replace private literals with generic inputs, discovery, variables, or documented examples;
 5. remove credentials, tokens, cookies, private keys, personal identifiers, client names, internal DNS, target IPs/domains, addresses, scan output, session state, and collected evidence;
 6. deduplicate against existing canonical skills;
-7. validate the final canonical package and its adapter exports.
+7. preserve provenance for externally authored work: record the canonical source URL, upstream author or organization, license, and an imported tag/version/revision when available; use `SKILL.md` metadata plus a visible attribution note or linked reference so the import cannot be mistaken for original repository work;
+8. validate the final canonical package and its adapter exports.
+
+Attribution survives adaptation. Reformatting, shortening, wrapping an upstream CLI, or translating a provider-specific skill into the canonical format does not make the imported work original to this repository. If authorship or licensing cannot be established, resolve that before importing.
 
 Raw backups and redaction maps must never be committed, attached to issues or PRs, copied into documentation, or echoed into CI logs. Review/automation output should discuss categories of stripped data rather than reproducing the values.
 
