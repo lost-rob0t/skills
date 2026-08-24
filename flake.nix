@@ -11,6 +11,7 @@
         activitywatch-visualize = ./skills/activitywatch-visualize;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
+        impeccable = ./skills/impeccable;
         prolog-reasoning = ./skills/prolog-reasoning;
         qtile-confirm = ./skills/qtile-confirm;
         qtile-debug = ./skills/qtile-debug;

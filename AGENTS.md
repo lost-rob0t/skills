@@ -53,6 +53,22 @@ Before importing a skill, remove target-specific operational state, credentials,
 
 Never paste raw private values into issues, PRs, commit messages, documentation, or CI output. Discuss the category of removed information instead.
 
+### External attribution
+
+An externally authored skill must never be presented as original work from this repository or its maintainer.
+
+For every external import or adaptation:
+
+- preserve the upstream project name and canonical source URL;
+- identify the upstream author, organization, or contributor group when the source provides it;
+- preserve and declare the upstream license;
+- record the imported version, tag, or commit revision when practical;
+- use `metadata` in `SKILL.md` for machine-readable provenance such as `author`, `source`, `upstream-version`, `upstream-revision`, and `provenance: external-import`;
+- add a visible attribution note in the skill or a linked reference so a reader cannot reasonably mistake the work for an original skill from this repository;
+- retain attribution when adapting, shortening, or wrapping the upstream work rather than deleting it because the local form changed.
+
+If the upstream license or authorship is unclear, stop and resolve provenance before committing the import. Do not invent attribution.
+
 ## Repository changes
 
 For a new skill:
