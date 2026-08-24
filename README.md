@@ -37,6 +37,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `activitywatch-visualize` - activitywatch, visualization, timelines, heatmaps, privacy.
 - `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
+- `impeccable` - design, frontend, ui, ux, audit, polish, accessibility, impeccable. External integration of `pbakaus/impeccable` (Apache-2.0).
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `qtile-confirm` - qtile, screenshots, vision, visual-regression, bar-layout.
 - `qtile-debug` - qtile, diagnostics, logs, IPC, crash-analysis.
@@ -65,9 +66,11 @@ Do not make `lost-rob0t/dotfiles`, `$HOME/.dotfiles`, a specific username, hostn
 
 When configuration is needed, discover the user's actual configuration source. If the agent is authorized and has the tools, it may edit that source and document the change. Otherwise, provide the minimum configuration the user must add.
 
-## Import privacy
+## Import privacy and attribution
 
 External agent backups are source material only. Strip target-specific operational data, credentials, private infrastructure, client identifiers, addresses, scan output, session state, and collected evidence before committing an imported skill. Preserve reusable procedures, tooling, validation logic, scripts, references, and assets.
+
+Externally authored skills remain externally authored after import or adaptation. Preserve the upstream project/source URL, author or organization attribution, license, and a version/tag/revision when available. Put provenance in `SKILL.md` metadata and make attribution visible in the skill or a linked reference; do not imply the repository maintainer created upstream work.
 
 Raw backups and redaction maps do not belong in this repository, issues, PRs, or CI logs.
 
