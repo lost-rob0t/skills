@@ -32,20 +32,21 @@ jobs:
           grep -Fq 'Unexpected fields in frontmatter: unexpected-key' <<<"$output"
       - name: Test Task Steward bootstrap adapter
         run: python3 -m unittest tests/test_task_steward_bootstrap.py -v
-      - name: Test skill support scripts
-        run: python3 -m unittest tests/test_support_scripts.py -v
+      - name: Test skill support scripts and workflow discovery
+        run: python3 -m unittest tests/test_support_scripts.py tests/test_discover_workflows.py -v
       - name: Validate flake metadata
         run: nix flake metadata
       - name: Verify exported canonical skill names
         run: |
           set -euo pipefail
-           expected='["adadr","dotfiles-workflow","prolog-reasoning","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","sudo","task-steward-bootstrap","task-steward-worker","zara-mcp"]'
+           expected='["adadr","discover-workflows","dotfiles-workflow","prolog-reasoning","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","sudo","task-steward-bootstrap","task-steward-worker","zara-mcp"]'
           test "$(nix eval --json .#lib.skillNames)" = "$expected"
           test "$(nix eval --json .#lib.opencodeSkillNames)" = "$expected"
       - name: Verify canonical skill packages
         run: |
           set -euo pipefail
           test -f skills/adadr/SKILL.md
+          test -f skills/discover-workflows/SKILL.md
           test -f skills/dotfiles-workflow/SKILL.md
            test -f skills/prolog-reasoning/SKILL.md
            test -f skills/qtile-confirm/SKILL.md

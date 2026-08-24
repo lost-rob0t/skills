@@ -5,6 +5,7 @@
     let
       skills = {
         adadr = ./skills/adadr;
+        discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
         prolog-reasoning = ./skills/prolog-reasoning;
         qtile-confirm = ./skills/qtile-confirm;
