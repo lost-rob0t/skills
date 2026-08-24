@@ -31,6 +31,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 
 ## Skills
 
+- `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `qtile-confirm` - qtile, screenshots, vision, visual-regression, bar-layout.
