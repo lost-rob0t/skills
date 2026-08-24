@@ -40,6 +40,22 @@ regressions using reproducible evidence before proposing an edit.
 5. For a source failure, invoke `qtile-edit`; for a validated runtime change,
    invoke `qtile-reload`. Re-run the failing evidence after each change.
 
+## Isolated X11 reproduction
+
+Use a nested Xorg server when a visual or Emacs-frame bug could disturb the
+active desktop. Requires `Xephyr`, Qtile's X11 backend, and `scrot` for visual
+evidence. Follow `references/isolated-xorg.md` for the exact lifecycle:
+
+1. Use an unused display, temporary state directory, and unique Emacs server.
+2. Start Xephyr and Qtile with `--no-spawn`, an explicit socket, and the
+   isolated `DISPLAY`.
+3. Run every IPC/client/screenshot command with that same `DISPLAY` and socket.
+4. Inspect the nested screenshot with `qtile-confirm`, then stop only the
+   recorded Qtile/Xephyr/Emacs PIDs.
+
+A nested session is test isolation, not proof by itself; retain only the
+minimum screenshot and exact window geometry needed for the investigation.
+
 ## Rules
 
 - Prefer the smallest reproducer and quote the exact failing command/output.
