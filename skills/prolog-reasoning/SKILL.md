@@ -10,6 +10,24 @@ Requires a compatible Prolog MCP server. If it is absent and setup is requested,
 
 Use the MCP server named `prolog` when that name is configured, otherwise use the compatible server exposed by the current runtime. Keep the Prolog context smaller than the surrounding coding context: encode only the facts, rules, constraints, or source needed to answer the current question.
 
+## Tmpfs RLM context
+
+When `PROLOG_TMP_SPEC_CONTEXT` is set, use `$PROLOG_TMP_SPEC_CONTEXT/context.prolog` as the live symbolic working context for the run. The launcher is responsible for ensuring the backing filesystem is tmpfs; do not copy the context to durable disk merely for convenience.
+
+Use it in an RLM-style loop:
+
+1. Query what the KB already knows.
+2. Express missing knowledge as a hypothesis, unresolved requirement, or needed observation rather than guessing.
+3. Use the smallest repository read, tool, external source, or subagent needed to establish the missing fact.
+4. Record the verified result compactly with provenance, including repository SHA/state identity when the source is mutable.
+5. Query again and derive the next action.
+6. Record test and proof results against the exact state they checked.
+7. Repeat until the task's completion predicate or verification invariants succeed, or a genuine blocker is proved.
+
+Do not use `context.prolog` as a transcript, log sink, or repository mirror. Store paths, hashes, symbols, and concise observations instead of large source excerpts. Facts tied to an old repository SHA are historical evidence, not automatically current facts after HEAD changes.
+
+If `/spec` is also loaded, specification facts and implementation-observation facts may coexist in this context, but keep their roles distinguishable so the implementation can be verified against the intended contract rather than against self-reported success.
+
 ## When to use it
 
 Use Prolog when the task benefits from one or more of these:
@@ -36,6 +54,8 @@ Do not invoke it merely because a task contains structured data. Direct code/sea
 8. Use `get_source` only when the accumulated live program must be inspected. Close the session with `close_session` when the reasoning task is complete.
 
 A client may expose these tools with a server prefix, for example `prolog_create_session`, `prolog_run_goal`, and `prolog_close_session`.
+
+When a tmpfs `context.prolog` is present, keep the on-disk KB and the live MCP session synchronized intentionally: consult the file at session creation, append/replace predicates as facts are verified, and ensure final verification uses the exact current context rather than an earlier in-memory copy.
 
 ## Token discipline
 

@@ -34,6 +34,13 @@ def render(title: str) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def default_root() -> Path:
+    prolog_context = os.environ.get("PROLOG_TMP_SPEC_CONTEXT")
+    if prolog_context:
+        return Path(prolog_context).expanduser().resolve() / "spec"
+    return Path(os.environ.get("TMPDIR", "/tmp")) / "spec"
+
+
 def init_spec(
     task: str,
     *,
@@ -41,7 +48,7 @@ def init_spec(
     root: Path | None = None,
     force: bool = False,
 ) -> Path:
-    base = root or Path(os.environ.get("TMPDIR", "/tmp")) / "spec"
+    base = root or default_root()
     target = base.expanduser().resolve() / slugify(task) / "SPEC.md"
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists() and not force:
@@ -54,7 +61,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("task", help="task name used for the directory slug")
     parser.add_argument("--title", help="document title; defaults to task")
-    parser.add_argument("--root", type=Path, help="override the default ${TMPDIR:-/tmp}/spec root")
+    parser.add_argument("--root", type=Path, help="override the default scratch spec root")
     parser.add_argument("--force", action="store_true", help="replace an existing SPEC.md")
     args = parser.parse_args()
     try:
