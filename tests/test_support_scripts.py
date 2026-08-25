@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,6 +38,14 @@ class SupportScriptTests(unittest.TestCase):
             self.assertIn("## Acceptance criteria", target.read_text(encoding="utf-8"))
             with self.assertRaises(FileExistsError):
                 spec_init.init_spec("My Weird / Task", root=root)
+
+    def test_spec_prefers_prolog_tmp_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            context = Path(tmp) / "context"
+            context.mkdir()
+            with mock.patch.dict(os.environ, {"PROLOG_TMP_SPEC_CONTEXT": str(context)}, clear=False):
+                target = spec_init.init_spec("V4 Runtime")
+            self.assertEqual(target, context / "spec" / "v4-runtime" / "SPEC.md")
 
     def test_rage_init_renders_exact_start_identity(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

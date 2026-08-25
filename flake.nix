@@ -12,7 +12,6 @@
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
         impeccable = ./skills/impeccable;
-        opencode-yolo = ./skills/opencode-yolo;
         prolog-reasoning = ./skills/prolog-reasoning;
         qtile-confirm = ./skills/qtile-confirm;
         qtile-debug = ./skills/qtile-debug;
