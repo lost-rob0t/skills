@@ -12,6 +12,12 @@
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
         impeccable = ./skills/impeccable;
+        ponytail = ./skills/ponytail;
+        ponytail-audit = ./skills/ponytail-audit;
+        ponytail-debt = ./skills/ponytail-debt;
+        ponytail-gain = ./skills/ponytail-gain;
+        ponytail-help = ./skills/ponytail-help;
+        ponytail-review = ./skills/ponytail-review;
         prolog-reasoning = ./skills/prolog-reasoning;
         qtile-confirm = ./skills/qtile-confirm;
         qtile-debug = ./skills/qtile-debug;
