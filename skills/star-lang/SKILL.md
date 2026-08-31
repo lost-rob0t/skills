@@ -1,45 +1,60 @@
 ---
 name: star-lang
-description: star-lang, common-lisp, compiler, runtime, actors, manifests, nix
+description: star-lang, language, schemas, compiler, runtime, extensions, common-lisp
 ---
 
 # Star-Lang
 
 ## Goal
 
-Load, compile, test, or extend Star-Lang source and its Common Lisp actor runtime using the current repository authority.
+Use Star-Lang to define, load, and consume versioned specification libraries,
+or extend the language and its Common Lisp runtime through the current
+canonical implementation.
 
-Requires Git, Nix, and a current `lost-rob0t/star-lang` checkout.
+Requires Git, Nix, and a current Star-Lang checkout. Use paths discovered from
+the user's repository or supplied explicitly; do not assume a personal clone
+location.
 
-## Input
+## Choose the task
 
-A `.star` specification, runtime/actor change, or exact Star-Lang operation.
-
-## Output
-
-A loaded manifest, tested Common Lisp runtime change, or executable local actor with evidence from the repository gates.
+- To write or modify `.star`, load a library, resolve imports, or consume its
+  compiled graph, read [references/language.md](references/language.md).
+- To add reusable schema vocabulary, prefer a new or imported `.star` library.
+  Use a declarative format-1 macro only for repeated declaration shapes.
+- To change syntax, types, compiler IR, bindings, actor behavior, or adapters,
+  read [references/extending.md](references/extending.md).
+- For native or external actor operations, also read
+  [references/runtime.md](references/runtime.md).
 
 ## Workflow
 
-1. Read the current `lost-rob0t/star-lang` README, conformance ledger, and relevant implementation-slice matrix. Current code outranks older Auto Research prose.
-2. Keep Star-Lang implementation in Common Lisp. Generated Python/TypeScript bindings consume portable manifests; they do not implement the language.
-3. Parse `.star` only through the closed Star-Lang parser. Do not feed it to the Common Lisp reader.
-4. Load a local spec with:
+1. Inspect the current README, conformance ledger, representative fixtures,
+   owning package exports, and tests. Current executable code outranks older
+   design prose.
+2. Select the smallest extension layer that fits: library source, declarative
+   macro, compiler surface, final runtime system, or adapter port. Do not create
+   a parallel parser, compiler, dispatcher, or runtime.
+3. For language use, start from a minimal `spec-library`, load it through the
+   `starlang` CLI, and inspect the resulting graph before integrating it.
+4. For implementation changes, add a focused failing test at the owning
+   boundary, implement the smallest coherent change, and update fixtures,
+   exports, serialization, bindings, docs, or the conformance ledger when those
+   contracts actually change.
+5. Run focused ASDF tests, then run this skill's complete gate:
 
    ```bash
-   nix run . -- load <file.star> \
-     --runtime-compiler eval \
-     --cache <cache-dir> \
-     --manifest <loaded-graph.json>
+   scripts/verify.py --repo <star-lang-checkout>
    ```
-
-5. For remote imports, require the exact library name, version, full SHA-256 digest, and explicit `--allow-network`; keep HTTPS and cache verification intact.
-6. For actors, use the final `starlang-runtime` local API described in [references/runtime.md](references/runtime.md). Source-level actor lowering, external dispatch, supervision, and remoting remain partly prototype-owned; extend the current authority instead of creating a parallel path.
-7. Run focused ASDF tests, then use this skill's `scripts/verify.py --repo <star-lang-checkout>` helper for the canonical `nix run .#tests` plus `nix flake check -L` gate. It refuses to run outside a flake checkout and stops at the first failing stage.
 
 ## Rules
 
-- Normalized IR remains runtime-neutral and data-only; transport details belong in adapter manifests or ports.
-- Preserve lower-camel-case wire/document fields and deterministic canonical JSON.
-- Exact decimal values remain canonical strings; floats must be finite binary64 JSON numbers.
-- Do not claim full research conformance while the repository ledger says otherwise.
+- `.star` source always enters through the closed UTF-8 Star-Lang parser, never
+  the Common Lisp reader or evaluator.
+- Preserve the explicit read -> resolve -> expand -> validate -> compile
+  pipeline and keep normalized IR deterministic, data-only, and runtime-neutral.
+- Imports use exact versions and full SHA-256 locks. Remote resolution is HTTPS
+  only and requires explicit network authorization.
+- Source and wire field names are lower camel case. Exact decimals stay strings;
+  do not claim unsupported numeric or research-conformance behavior.
+- Common Lisp is the implementation language. Generated Python or TypeScript
+  bindings consume portable manifests; they do not implement Star-Lang.

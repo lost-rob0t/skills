@@ -1,32 +1,57 @@
-# Star-Lang runtime operations
+# Using and extending the actor runtime
 
-The final `starlang-runtime` currently owns deterministic local actor creation, registration, bounded mailboxes, serialized state transitions, tell, ask, stop, restart/generation, stale-reference rejection, and shutdown.
+Read this reference for local actor execution, external actor contracts, or
+changes to `starlang-runtime`.
 
-## Native actor
+## Minimal native actor
 
-Create a runtime with `starlangruntime:make-runtime`, then use `starlangruntime:create-native-actor` with:
+Load the `starlang-runtime` ASDF system, then use its exported package:
 
-- a unique actor name;
-- a handler of `(message state runtime)`;
-- optional `:service-uri`, `:accepts`, `:produces`, input/output validators, initial state, restart policy, mailbox capacity, and metadata.
-
-The default local service URI is `star://local:localhost:<actor-name>`. A supplied URI must end in the same actor name.
-
-Use `tell` for queued delivery, `ask` for a correlated result, `run-until-idle` for deterministic draining, and `resolve-actor` for name or STAR URI lookup. `invoke-actor` is compatibility syntax over `ask`, not a second execution path.
-
-## External actor
-
-`create-external-actor` registers identity and contract only. Current final local execution raises `actor-external-dispatch-required-error`; concrete remote dispatch, runtime-directory integration, Sento remoting, journal/replay, leases, and fencing remain partly prototype-owned. Do not present registration alone as an operational remote actor.
-
-## Scraper example
-
-`star-scrape:create-scraper-actor` is the current concrete final-system example. It composes a fixture or real HTTP client and HTML adapter, declares `:scrape-plan` to `:scrape-result`, validates both contracts, and registers through `starlangruntime:create-actor`.
-
-## Tests
-
-Use the owning ASDF system tests for the touched boundary, then run:
-
-```bash
-nix run .#tests
-nix flake check -L
+```lisp
+(let ((runtime (starlangruntime:make-runtime)))
+  (starlangruntime:create-native-actor
+   runtime
+   "echo"
+   (lambda (message state actor-runtime)
+     (declare (ignore actor-runtime))
+     (values message state))
+   :mailbox-capacity 16)
+  (unwind-protect
+       (starlangruntime:ask runtime "echo" "hello")
+    (starlangruntime:shutdown-runtime runtime)))
 ```
+
+The handler receives `(message state runtime)` and may return `(values result
+new-state)`. Use `tell` for queued delivery, `ask` for a correlated result,
+`dispatch-next` or `run-until-idle` for deterministic draining, and
+`resolve-actor` for name or STAR URI lookup. `invoke-actor` is compatibility
+syntax over `ask`, not another execution path.
+
+Add `:accepts`, `:produces`, input/output validators, `:initial-state`, restart
+policy, mailbox capacity, service URI, and metadata only when the actor's
+contract needs them. A supplied local service URI must end in the actor name.
+
+## External actors
+
+`create-external-actor` registers identity and contract only. Local dispatch to
+one raises `actor-external-dispatch-required-error` until a concrete adapter
+owns the route. Do not present registration as remote execution or bypass the
+adapter boundary with an ambient network call.
+
+The current concrete final-system composition example is
+`star-scrape:create-scraper-actor`: it declares input/output contracts, composes
+HTTP and HTML adapters, and registers through the same runtime actor path.
+
+## Extending runtime behavior
+
+- Extend exported definitions and the existing registry/mailbox/dispatch path.
+- Preserve FIFO delivery, bounded-mailbox results, serialized state commits,
+  restart generations, stale-reference rejection, shutdown, and typed failures.
+- A failed handler or output contract must not commit proposed actor state.
+- Put remote transport in an adapter port and retain explicit external-dispatch
+  failure when no adapter is present.
+- Add tests to `starlang-runtime/tests/` for final-system behavior. If the
+  behavior is still prototype-owned, change and test that authority instead of
+  duplicating it.
+
+Run the focused owning ASDF tests, then the skill's complete verification gate.
