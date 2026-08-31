@@ -1,6 +1,6 @@
 ---
 name: dotfiles-workflow
-description: dotfiles, declarative-config, nix, home-manager, mcp, deployment, permissions, plugins
+description: dotfiles, declarative-config, nix, home-manager, mcp, skill-updates, plugins
 compatibility: Agent Skills-compatible coding agent with git; Nix/Home Manager only when the user's configuration uses them
 ---
 
@@ -57,6 +57,21 @@ For the original `unseen` environment only:
 - `lost-rob0t/skills` at `$HOME/skills` is the canonical skill source.
 
 This compatibility path is an optimization for that environment, not a dependency imposed on other users.
+
+## Skill updates
+
+When asked to update, sync, or refresh agent skills that a flake input provides, the durable operation is one loop: update the owning flake input, run the flake's validation gate, publish the lockfile change, and re-activate the local configuration. Follow the repository's own publishing policy for the lockfile commit. Never hand-edit the installed skill directories; the lockfile plus activation is the update path.
+
+### Owner compatibility
+
+For the original `unseen` environment, `skill-sync` (from `lost-rob0t/dotfiles`, deployed on `$PATH` by Home Manager) performs this loop in one step:
+
+```sh
+skill-sync --dry-run    # print the plan without changing anything
+skill-sync              # update skills input, gate on checks, publish, activate
+```
+
+It refuses dirty lockfiles and non-default branches, gates on `nix flake check -L` before publishing, short-circuits when the input is already current, and supports `--input`, `--branch`, `--configuration`, `--no-push`, and `--no-activate`. Prefer `skill-sync` there instead of running `nix flake update` and `home-manager switch` separately.
 
 ## Rules
 
