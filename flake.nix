@@ -11,6 +11,7 @@
         activitywatch-visualize = ./skills/activitywatch-visualize;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
+        git-worktrees = ./skills/git-worktrees;
         impeccable = ./skills/impeccable;
         ponytail = ./skills/ponytail;
         ponytail-audit = ./skills/ponytail-audit;
