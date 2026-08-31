@@ -33,13 +33,13 @@ jobs:
       - name: Test Task Steward bootstrap adapter
         run: python3 -m unittest tests/test_task_steward_bootstrap.py -v
       - name: Test skill support scripts and workflow discovery
-        run: python3 -m unittest tests/test_support_scripts.py tests/test_discover_workflows.py tests/test_git_worktrees.py tests/test_youtube_context.py -v
+        run: python3 -m unittest tests/test_support_scripts.py tests/test_discover_workflows.py tests/test_git_worktrees.py tests/test_status_update.py tests/test_youtube_context.py -v
       - name: Validate flake metadata
         run: nix flake metadata
       - name: Verify exported canonical skill names
         run: |
           set -euo pipefail
-          expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","discover-workflows","dotfiles-workflow","git-worktrees","impeccable","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-reasoning","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","sudo","task-steward-bootstrap","task-steward-worker","youtube-context","zara-mcp"]'
+          expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","discover-workflows","dotfiles-workflow","git-worktrees","impeccable","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-reasoning","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","status-update","sudo","task-steward-bootstrap","task-steward-worker","youtube-context","zara-mcp"]'
           test "$(nix eval --json .#lib.skillNames)" = "$expected"
           test "$(nix eval --json .#lib.opencodeSkillNames)" = "$expected"
       - name: Verify canonical skill packages
@@ -77,6 +77,7 @@ jobs:
           test -f skills/starintel-local-search/SKILL.md
           test -f skills/starintel-osint/SKILL.md
           test -f skills/starintel-repo-bootstrap/SKILL.md
+          test -f skills/status-update/SKILL.md
           test -f skills/sudo/SKILL.md
           test -f skills/task-steward-bootstrap/SKILL.md
           test -f skills/task-steward-worker/SKILL.md

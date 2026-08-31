@@ -36,6 +36,7 @@
         starintel-local-search = ./skills/starintel-local-search;
         starintel-osint = ./skills/starintel-osint;
         starintel-repo-bootstrap = ./skills/starintel-repo-bootstrap;
+        status-update = ./skills/status-update;
         sudo = ./skills/sudo;
         task-steward-bootstrap = ./skills/task-steward-bootstrap;
         task-steward-worker = ./skills/task-steward-worker;

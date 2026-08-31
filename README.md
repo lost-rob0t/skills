@@ -55,6 +55,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `starintel-local-search` - starintel, local-search, jsonl, ndjson, relations, corpus.
 - `starintel-osint` - starintel, osint, research, evidence, provenance, corroboration, sources.
 - `starintel-repo-bootstrap` - github, repositories, adard, issues, bootstrap, provenance.
+- `status-update` - notify-send, dunst, libnotify, desktop-notifications, status, task-completion.
 - `sudo` - sudo, privilege-escalation, desktop-portals, xdg-desktop-portal, polkit, authentication.
 - `task-steward-bootstrap` - steward, bootstrap, a0, opencode, agents, adapters.
 - `task-steward-worker` - steward, rage, leases, fencing, heartbeat, receipts.
