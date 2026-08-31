@@ -1,0 +1,244 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: youtube-context VIDEO-URL
+
+Fetch an English transcript context packet. Captions are preferred; videos
+without usable captions use local Whisper transcription.
+
+Environment:
+  YOUTUBE_CONTEXT_YT_DLP_PROGRAM       yt-dlp executable (default: yt-dlp)
+  YOUTUBE_CONTEXT_SUB_LANGS            subtitle selector (default: en.*,en)
+  YOUTUBE_CONTEXT_WHISPER_PROGRAM      Whisper executable (default: whisper)
+  YOUTUBE_CONTEXT_WHISPER_MODEL        Whisper model (default: base.en)
+  YOUTUBE_CONTEXT_WHISPER_LANGUAGE     Whisper language (default: en)
+  YOUTUBE_CONTEXT_WHISPER_THREADS      Whisper CPU threads (default: 16)
+EOF
+}
+
+die() {
+  printf 'youtube-context: %s\n' "$*" >&2
+  exit 1
+}
+
+resolve_executable() {
+  local requested="$1"
+  if [[ "$requested" == */* ]]; then
+    [[ -x "$requested" ]] || return 1
+    printf '%s\n' "$requested"
+  else
+    command -v "$requested"
+  fi
+}
+
+if (( $# == 1 )) && [[ "$1" == '-h' || "$1" == '--help' ]]; then
+  usage
+  exit 0
+fi
+if (( $# != 1 )); then
+  usage >&2
+  exit 2
+fi
+
+url="$1"
+[[ "$url" =~ ^https?:// ]] || die 'expected an http(s) video URL'
+
+yt_dlp_program="${YOUTUBE_CONTEXT_YT_DLP_PROGRAM:-yt-dlp}"
+sub_langs="${YOUTUBE_CONTEXT_SUB_LANGS:-en.*,en}"
+whisper_program="${YOUTUBE_CONTEXT_WHISPER_PROGRAM:-whisper}"
+whisper_model="${YOUTUBE_CONTEXT_WHISPER_MODEL:-base.en}"
+whisper_language="${YOUTUBE_CONTEXT_WHISPER_LANGUAGE:-en}"
+whisper_threads="${YOUTUBE_CONTEXT_WHISPER_THREADS:-16}"
+
+yt_dlp="$(resolve_executable "$yt_dlp_program")" \
+  || die "$yt_dlp_program is not available in PATH"
+python_program="$(resolve_executable python3)" \
+  || die 'python3 is not available in PATH'
+
+tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/youtube-context.XXXXXX")"
+trap 'rm -rf -- "$tmp_dir"' EXIT
+
+yt_dlp_capture() {
+  local label="$1"
+  shift
+  local stdout_file="$tmp_dir/$label.stdout"
+  local stderr_file="$tmp_dir/$label.stderr"
+  local detail
+
+  if ! "$yt_dlp" --quiet --no-warnings "$@" >"$stdout_file" 2>"$stderr_file"; then
+    detail="$(<"$stderr_file")"
+    if [[ -z "$detail" ]]; then
+      detail="$(<"$stdout_file")"
+    fi
+    detail="${detail//$'\n'/ }"
+    die "yt-dlp $label failed${detail:+: $detail}"
+  fi
+}
+
+yt_dlp_capture subtitles \
+  --skip-download \
+  --no-playlist \
+  --write-subs \
+  --write-auto-subs \
+  --sub-langs "$sub_langs" \
+  --sub-format 'json3/vtt/best' \
+  --output "$tmp_dir/%(id)s.%(ext)s" \
+  "$url"
+
+transcript="$("$python_program" - "$tmp_dir" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+
+def normalize(text: str) -> str:
+    text = re.sub(r"<[^>]+>", "", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def subtitle_score(path: Path) -> tuple[int, str]:
+    name = path.name
+    score = 0 if name.endswith(".json3") else 100
+    if re.search(r"\.en\.(?:json3|vtt)$", name):
+        language = 0
+    elif re.search(r"\.en-US\.(?:json3|vtt)$", name):
+        language = 1
+    elif re.search(r"\.en-GB\.(?:json3|vtt)$", name):
+        language = 2
+    elif re.search(r"\.en[^.]*\.(?:json3|vtt)$", name):
+        language = 10
+    else:
+        language = 50
+    return score + language, name
+
+
+def json3_transcript(path: Path) -> str:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    chunks = []
+    previous = None
+    for event in data.get("events") or []:
+        segments = event.get("segs")
+        if not segments:
+            continue
+        chunk = normalize("".join(segment.get("utf8") or "" for segment in segments))
+        if chunk and chunk != previous:
+            chunks.append(chunk)
+            previous = chunk
+    return normalize(" ".join(chunks))
+
+
+def vtt_transcript(path: Path) -> str:
+    lines = []
+    previous = None
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if (
+            not line
+            or line.startswith("WEBVTT")
+            or line.startswith("Kind:")
+            or line.startswith("Language:")
+            or "-->" in line
+            or re.fullmatch(r"[0-9]+", line)
+        ):
+            continue
+        line = normalize(line)
+        if line and line != previous:
+            lines.append(line)
+            previous = line
+    return normalize(" ".join(lines))
+
+
+directory = Path(sys.argv[1])
+files = sorted(
+    (path for path in directory.iterdir() if path.suffix in {".json3", ".vtt"}),
+    key=subtitle_score,
+)
+if files:
+    subtitle = files[0]
+    transcript = (
+        json3_transcript(subtitle)
+        if subtitle.suffix == ".json3"
+        else vtt_transcript(subtitle)
+    )
+    print(transcript, end="")
+PY
+)"
+
+source='video captions'
+if [[ -z "$transcript" ]]; then
+  whisper="$(resolve_executable "$whisper_program")" \
+    || die "no usable captions and $whisper_program is not available in PATH"
+  resolve_executable ffmpeg >/dev/null \
+    || die 'no usable captions and ffmpeg is required by Whisper'
+
+  yt_dlp_capture audio \
+    --no-playlist \
+    --format 'bestaudio/best' \
+    --output "$tmp_dir/audio.%(ext)s" \
+    "$url"
+
+  shopt -s nullglob
+  audio_files=("$tmp_dir"/audio.*)
+  (( ${#audio_files[@]} > 0 )) \
+    || die 'yt-dlp completed without producing an audio file'
+  audio="${audio_files[0]}"
+  whisper_output="${audio%.*}.txt"
+
+  if ! "$whisper" "$audio" \
+    --model "$whisper_model" \
+    --device cpu \
+    --language "$whisper_language" \
+    --task transcribe \
+    --output_format txt \
+    --output_dir "$tmp_dir" \
+    --verbose False \
+    --fp16 False \
+    --threads "$whisper_threads" \
+    >"$tmp_dir/whisper.stdout" 2>"$tmp_dir/whisper.stderr"; then
+    detail="$(<"$tmp_dir/whisper.stderr")"
+    if [[ -z "$detail" ]]; then
+      detail="$(<"$tmp_dir/whisper.stdout")"
+    fi
+    detail="${detail//$'\n'/ }"
+    die "Whisper transcription failed${detail:+: $detail}"
+  fi
+  [[ -f "$whisper_output" ]] \
+    || die "Whisper completed without producing $whisper_output"
+
+  transcript="$("$python_program" - "$whisper_output" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8")
+text = re.sub(r"<[^>]+>", "", text)
+print(re.sub(r"\s+", " ", text).strip(), end="")
+PY
+)"
+  [[ -n "$transcript" ]] || die 'Whisper produced an empty transcript'
+  source="local Whisper ($whisper_model)"
+fi
+
+title='Video'
+if title_output="$({
+  "$yt_dlp" --quiet --no-warnings \
+    --skip-download \
+    --no-playlist \
+    --print '%(title)s' \
+    "$url"
+} 2>/dev/null)"; then
+  while IFS= read -r candidate; do
+    candidate="${candidate#"${candidate%%[![:space:]]*}"}"
+    candidate="${candidate%"${candidate##*[![:space:]]}"}"
+    if [[ -n "$candidate" ]]; then
+      title="$candidate"
+      break
+    fi
+  done <<<"$title_output"
+fi
+
+printf 'Title: %s\nURL: %s\nTranscript source: %s\n\nTranscript:\n%s' \
+  "$title" "$url" "$source" "$transcript"
