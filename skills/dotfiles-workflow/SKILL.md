@@ -71,7 +71,7 @@ skill-sync --dry-run    # print the plan without changing anything
 skill-sync              # update skills input, gate on checks, publish, activate
 ```
 
-It refuses dirty lockfiles and non-default branches, gates on `nix flake check -L` before publishing, short-circuits when the input is already current, and supports `--input`, `--branch`, `--configuration`, `--no-push`, and `--no-activate`. Prefer `skill-sync` there instead of running `nix flake update` and `home-manager switch` separately.
+It refuses dirty lockfiles and non-default branches, gates on flake checks before publishing, short-circuits when the input is already current, and supports `--input`, `--branch`, `--configuration`, `--no-push`, and `--no-activate`. Prefer `skill-sync` there instead of running `nix flake update` and `home-manager switch` separately.
 
 ## Rules
 
