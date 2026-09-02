@@ -23,7 +23,7 @@ Use the installed `prolog-verify` command when available. Otherwise run this ski
 1. Run `prolog-verify init --task <short-task-id>` in the worktree before recording evidence.
 2. Add task-specific requirements and derived invariants to the two canonical files. Never assert `verified(true)` or equivalent self-certifying facts.
 3. Run real tests through `prolog-verify observe -- <command> [args...]`. The helper records the command, exit status, output digest, Git HEAD, and worktree digest.
-4. When external discovery is required, use Brave Search and record the successful result with `prolog-verify record-brave --query <query> --result-file <file>`. Do not mark local-only work as research.
+4. When external discovery is required, run `prolog-verify brave --query <query>` so the fixed Brave CLI call and its result are recorded together. Use `record-brave` only when a compatible Brave tool already wrote its successful result to a file. Do not mark local-only work as research.
 5. Run `prolog-verify check`. Treat a missing, stale, timed-out, exceptional, or non-zero result as failure.
 
 ## Rules

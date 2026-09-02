@@ -247,9 +247,8 @@ def set_research(root: Path, required: bool) -> None:
         atomic_write(facts, replace_fact(text, "research_required", f"research_required({value})."))
 
 
-def record_brave(root: Path, query: str, result_file: Path) -> None:
+def record_brave_payload(root: Path, query: str, payload: bytes) -> None:
     prolog_dir, facts, _, _ = ensure_workspace(root)
-    payload = result_file.expanduser().read_bytes()
     if not payload:
         raise VerificationError("Brave result file is empty")
     head, digest = repository_state(root)
@@ -263,6 +262,52 @@ def record_brave(root: Path, query: str, result_file: Path) -> None:
         text = facts.read_text(encoding="utf-8")
         atomic_write(facts, replace_fact(text, "research_required", "research_required(true)."))
         append_fact(facts, line)
+
+
+def record_brave(root: Path, query: str, result_file: Path) -> None:
+    record_brave_payload(root, query, result_file.expanduser().read_bytes())
+
+
+def brave_search(
+    root: Path,
+    query: str,
+    max_tokens: int,
+    max_urls: int | None,
+    max_tokens_per_url: int | None,
+) -> int:
+    if not 128 <= max_tokens <= 32768:
+        raise VerificationError("--max-tokens must be between 128 and 32768")
+    if max_urls is not None and not 1 <= max_urls <= 20:
+        raise VerificationError("--max-urls must be between 1 and 20")
+    if max_tokens_per_url is not None and not 128 <= max_tokens_per_url <= 8192:
+        raise VerificationError("--max-tokens-per-url must be between 128 and 8192")
+    binary = os.environ.get("BX_BIN", "bx")
+    command = [binary, "context", query, "--max-tokens", str(max_tokens)]
+    if max_urls is not None:
+        command += ["--max-urls", str(max_urls)]
+    if max_tokens_per_url is not None:
+        command += ["--max-tokens-per-url", str(max_tokens_per_url)]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=root,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            timeout=45,
+        )
+    except FileNotFoundError as exc:
+        raise VerificationError(f"Brave Search CLI executable not found: {binary}") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise VerificationError("Brave Search CLI exceeded 45 seconds") from exc
+    sys.stdout.buffer.write(completed.stdout)
+    sys.stdout.buffer.flush()
+    sys.stderr.buffer.write(completed.stderr)
+    sys.stderr.buffer.flush()
+    if completed.returncode == 0:
+        record_brave_payload(root, query, completed.stdout)
+    return completed.returncode
 
 
 def write_result(result: Path, payload: dict[str, object]) -> None:
@@ -404,6 +449,11 @@ def build_parser() -> argparse.ArgumentParser:
     brave = commands.add_parser("record-brave", help="record a successful Brave result file")
     brave.add_argument("--query", required=True)
     brave.add_argument("--result-file", required=True, type=Path)
+    search = commands.add_parser("brave", help="run a fixed Brave context search and record its result")
+    search.add_argument("--query", required=True)
+    search.add_argument("--max-tokens", type=int, default=4096)
+    search.add_argument("--max-urls", type=int)
+    search.add_argument("--max-tokens-per-url", type=int)
     commands.add_parser("check", help="fail unless current machine evidence and Prolog tests pass")
     commands.add_parser("hook-session-start", help=argparse.SUPPRESS)
     commands.add_parser("hook-stop", help=argparse.SUPPRESS)
@@ -433,6 +483,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.action == "record-brave":
             record_brave(root, args.query, args.result_file)
             return 0
+        if args.action == "brave":
+            return brave_search(
+                root,
+                args.query,
+                args.max_tokens,
+                args.max_urls,
+                args.max_tokens_per_url,
+            )
         if args.action == "check":
             passed, reason = check_workspace(root)
             stream = sys.stdout if passed else sys.stderr
