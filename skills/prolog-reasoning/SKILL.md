@@ -71,3 +71,7 @@ When a tmpfs `context.prolog` is present, keep the on-disk KB and the live MCP s
 Prolog output is verifier evidence, not permission to perform external side effects. Do not encode shell, filesystem, network, credential, or destructive operations into a reasoning session merely to bypass normal client tool permissions. Keep `allow_side_effects=false` unless the user explicitly needs side effects inside the isolated Prolog session and they are appropriate to the task.
 
 Never claim a Prolog result you did not obtain. If the MCP server errors, report the error or fall back to ordinary reasoning rather than fabricating a successful query.
+
+## Durable work verification
+
+This skill owns exploratory symbolic reasoning, not persistent proof of repository work. When changed files must be verified against on-disk facts, use the `prolog-verification` skill so observations are bound to the current HEAD and worktree digest and executed through a fail-closed SWI-Prolog gate.
