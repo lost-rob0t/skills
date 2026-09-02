@@ -37,6 +37,9 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `activitywatch-visualize` - activitywatch, visualization, timelines, heatmaps, privacy.
 - `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
+- `forgejo-repo-bootstrap` - forgejo, repositories, adard, issues, bootstrap, provenance.
+- `forgejo-skill-edit` - skills, forgejo, editing, validation, gitflow, pull-request, CI.
+- `git` - git, forgejo, github, hosting, remote, fallback, pr, issues.
 - `git-worktrees` - git, worktrees, parallel-work, branch-isolation, pr-review, cleanup.
 - `impeccable` - design, frontend, ui, ux, audit, polish, accessibility, impeccable. External integration of `pbakaus/impeccable` (Apache-2.0).
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
