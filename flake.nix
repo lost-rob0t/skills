@@ -23,6 +23,7 @@
         ponytail-help = ./skills/ponytail-help;
         ponytail-review = ./skills/ponytail-review;
         prolog-reasoning = ./skills/prolog-reasoning;
+        prolog-verification = ./skills/prolog-verification;
         qtile-confirm = ./skills/qtile-confirm;
         qtile-debug = ./skills/qtile-debug;
         qtile-edit = ./skills/qtile-edit;
