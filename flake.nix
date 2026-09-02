@@ -11,6 +11,9 @@
         activitywatch-visualize = ./skills/activitywatch-visualize;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
+        forgejo-repo-bootstrap = ./skills/forgejo-repo-bootstrap;
+        forgejo-skill-edit = ./skills/forgejo-skill-edit;
+        git = ./skills/git;
         git-worktrees = ./skills/git-worktrees;
         impeccable = ./skills/impeccable;
         ponytail = ./skills/ponytail;
