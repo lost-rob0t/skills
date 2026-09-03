@@ -37,6 +37,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `activitywatch-visualize` - activitywatch, visualization, timelines, heatmaps, privacy.
 - `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
+- `emacs-eval` - emacs, emacsclient, elisp, files, org.
 - `forgejo-repo-bootstrap` - forgejo, repositories, adard, issues, bootstrap, provenance.
 - `forgejo-skill-edit` - skills, forgejo, editing, validation, gitflow, pull-request, CI.
 - `git` - git, forgejo, github, hosting, remote, fallback, pr, issues.
