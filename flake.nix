@@ -9,10 +9,12 @@
         activitywatch-group = ./skills/activitywatch-group;
         activitywatch-productivity = ./skills/activitywatch-productivity;
         activitywatch-visualize = ./skills/activitywatch-visualize;
+        debug-system = ./skills/debug-system;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
         forgejo-repo-bootstrap = ./skills/forgejo-repo-bootstrap;
         forgejo-skill-edit = ./skills/forgejo-skill-edit;
+        free-resources = ./skills/free-resources;
         git = ./skills/git;
         git-worktrees = ./skills/git-worktrees;
         impeccable = ./skills/impeccable;
