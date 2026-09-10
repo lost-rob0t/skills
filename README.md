@@ -44,6 +44,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `git` - git, forgejo, github, hosting, remote, fallback, pr, issues.
 - `git-worktrees` - git, worktrees, parallel-work, branch-isolation, pr-review, cleanup.
 - `impeccable` - design, frontend, ui, ux, audit, polish, accessibility, impeccable. External integration of `pbakaus/impeccable` (Apache-2.0).
+- `prolog-project-kb` - prolog, memory, todo, debugging, tools, knowledge.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `prolog-verification` - prolog, verification, evidence, invariants, worktrees, brave, hooks.
 - `qtile-confirm` - qtile, screenshots, vision, visual-regression, bar-layout.
