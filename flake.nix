@@ -24,6 +24,7 @@
         ponytail-gain = ./skills/ponytail-gain;
         ponytail-help = ./skills/ponytail-help;
         ponytail-review = ./skills/ponytail-review;
+        prolog-project-kb = ./skills/prolog-project-kb;
         prolog-reasoning = ./skills/prolog-reasoning;
         prolog-verification = ./skills/prolog-verification;
         qtile-confirm = ./skills/qtile-confirm;
