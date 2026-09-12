@@ -38,6 +38,8 @@
         star-lang = ./skills/star-lang;
         starintel-actor-create = ./skills/starintel-actor-create;
         starintel-auto-dig = ./skills/starintel-auto-dig;
+        starintel-code-coordinator = ./skills/starintel-code-coordinator;
+        starintel-code-critic = ./skills/starintel-code-critic;
         starintel-document-create = ./skills/starintel-document-create;
         starintel-ingest = ./skills/starintel-ingest;
         starintel-local-search = ./skills/starintel-local-search;

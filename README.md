@@ -57,6 +57,8 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `star-lang` - star-lang, common-lisp, compiler, runtime, actors, manifests, nix.
 - `starintel-actor-create` - starintel, actors, star-lang, sento, plugins, manifests, testing.
 - `starintel-auto-dig` - starintel, auto-dig, osint, recursion, documents, relations, validation.
+- `starintel-code-coordinator` - starintel, coding, coordinator, sol, glm, integration.
+- `starintel-code-critic` - starintel, coding, critic, planning, sol, slices.
 - `starintel-document-create` - starintel, documents, relations, schema, validation, local-db.
 - `starintel-ingest` - starintel, ingest, jsonl, local-db, remote-api, validation.
 - `starintel-local-search` - starintel, local-search, jsonl, ndjson, relations, corpus.
