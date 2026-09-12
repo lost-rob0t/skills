@@ -52,6 +52,14 @@
         zara-mcp = ./skills/zara-mcp;
       };
 
+      # Agent Zero is GitHub-only. Keep the explicit Forgejo skills in the
+      # portable catalog for other consumers, but never expose them through the
+      # Agent Zero adapter or Home Manager module.
+      agentZeroSkills = builtins.removeAttrs skills [
+        "forgejo-repo-bootstrap"
+        "forgejo-skill-edit"
+      ];
+
       targets = {
         opencode = ".config/opencode/skills";
         claude = ".claude/skills";
@@ -62,12 +70,14 @@
         agent-zero = "usr/skills";
       };
 
-      mkSkillLinksModule = root: { lib, ... }: {
+      mkSkillLinksModuleFor = skillSet: root: { lib, ... }: {
         home.file = lib.mapAttrs' (
           name: source:
           lib.nameValuePair "${root}/${name}" { inherit source; }
-        ) skills;
+        ) skillSet;
       };
+
+      mkSkillLinksModule = mkSkillLinksModuleFor skills;
 
       opencodeModule = { ... }: {
         programs.opencode.skills = skills;
@@ -100,19 +110,20 @@
         };
         agent-zero = {
           root = targets.agent-zero;
-          inherit skills;
+          skills = agentZeroSkills;
         };
       };
     in
     {
       lib = {
-        inherit skills targets adapters mkSkillLinksModule;
+        inherit skills agentZeroSkills targets adapters mkSkillLinksModule;
         skillNames = builtins.attrNames skills;
+        agentZeroSkillNames = builtins.attrNames agentZeroSkills;
 
         # Agent Zero's usr/skills path is relative to its installation root,
         # so callers must supply that root instead of receiving a guessed path.
         mkAgentZeroHomeManagerModule = installRoot:
-          mkSkillLinksModule "${installRoot}/${targets.agent-zero}";
+          mkSkillLinksModuleFor agentZeroSkills "${installRoot}/${targets.agent-zero}";
 
         # Compatibility for existing dotfiles/consumers while the repository
         # migrates away from the old opencode/ source tree.
