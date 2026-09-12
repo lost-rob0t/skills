@@ -39,7 +39,7 @@ jobs:
       - name: Verify exported canonical skill names
         run: |
           set -euo pipefail
-          expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","debug-system","discover-workflows","dotfiles-workflow","forgejo-repo-bootstrap","forgejo-skill-edit","free-resources","git","git-worktrees","impeccable","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-project-kb","prolog-reasoning","prolog-verification","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","status-update","sudo","task-steward-bootstrap","task-steward-worker","youtube-context","zara-mcp"]'
+          expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","debug-system","discover-workflows","dotfiles-workflow","forgejo-repo-bootstrap","forgejo-skill-edit","free-resources","git","git-worktrees","impeccable","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-project-kb","prolog-reasoning","prolog-verification","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-code-coordinator","starintel-code-critic","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","status-update","sudo","task-steward-bootstrap","task-steward-worker","youtube-context","zara-mcp"]'
           test "$(nix eval --json .#lib.skillNames)" = "$expected"
           test "$(nix eval --json .#lib.opencodeSkillNames)" = "$expected"
       - name: Verify canonical skill packages
@@ -79,6 +79,8 @@ jobs:
           test -f skills/star-lang/SKILL.md
           test -f skills/starintel-actor-create/SKILL.md
           test -f skills/starintel-auto-dig/SKILL.md
+          test -f skills/starintel-code-coordinator/SKILL.md
+          test -f skills/starintel-code-critic/SKILL.md
           test -f skills/starintel-document-create/SKILL.md
           test -f skills/starintel-ingest/SKILL.md
           test -f skills/starintel-local-search/SKILL.md
