@@ -9,7 +9,7 @@ description: starintel, local-search, jsonl, ndjson, relations, corpus
 
 Search canonical local DB records and Auto-Dig packets before research, document creation, linking, or remote ingest.
 
-Requires Python 3.11+ and a current StarIntel Auto-Dig checkout.
+Requires Python 3.11+, a current StarIntel Auto-Dig checkout, and `starintel-spec-version`.
 
 ## Input
 
@@ -37,7 +37,7 @@ Use only the filters needed for the question. Results are JSONL. `--with-locatio
 
 ## Workflow
 
-1. Read the checkout's `AGENTS.md` and confirm it is current.
+1. Read the checkout's `AGENTS.md`, use `starintel-spec-version` to resolve the active release, and run `python3 scripts/schema-release.py check` before interpreting dtype/field semantics. A `v0.9.0` schema filename identifies the immutable base family, not necessarily the active release.
 2. Start with exact entity names, StarIntel IDs, external identifiers, source URLs, or predicates.
 3. Search without a confidence floor first so contrary or uncertain records remain visible.
 4. Narrow with `--dtype`, `--dataset`, `--id`, `--predicate`, or `--source`.
@@ -46,6 +46,7 @@ Use only the filters needed for the question. Results are JSONL. `--with-locatio
 
 ## Rules
 
+- Resolve version authority before using schema-dependent filters or interpreting stored fields.
 - Search both `db/` and `digs/` unless the task explicitly needs `--db-only` or `--packets-only`.
 - Resolve ambiguous names with identifiers and source evidence; never choose a record merely because it ranked first.
 - A relation match is evidence that a record asserts an edge, not proof that the edge is true.
