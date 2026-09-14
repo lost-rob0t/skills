@@ -9,7 +9,7 @@ description: starintel, actors, star-lang, sento, plugins, manifests, testing
 
 Create an actor in the runtime that actually owns the requested execution boundary.
 
-Requires current `lost-rob0t/star-lang` and StarIntel server repositories.
+Requires current `lost-rob0t/star-lang` and StarIntel server repositories plus `starintel-spec-version` when the actor consumes or emits StarIntel documents/manifests.
 
 ## Input
 
@@ -31,16 +31,18 @@ Read [references/runtime-boundaries.md](references/runtime-boundaries.md) for th
 ## Workflow
 
 1. Inspect the current runtime's repository instructions, exported packages, tests, and one maintained actor with the same deployment model.
-2. Define one stable name and canonical `star://<domain>:<address>:<actor>` URI whose actor component matches the name.
-3. Define accepted and produced message contracts, validators, mailbox capacity, state ownership, restart policy, capabilities, and effect ports.
-4. Keep network, process, storage, and broker effects behind explicit adapters; keep message/state transitions deterministic.
-5. Implement one canonical handler and registration path. Remove obsolete duplicate paths encountered in scope.
-6. Add tests for registration, happy path, invalid input/output, mailbox bounds, state rollback, handler failure, restart/generation, shutdown, and the real adapter boundary used.
-7. Wire startup only through the runtime's maintained hook or composition root.
-8. Run focused ASDF tests and the complete owning repository gate.
+2. Before defining any StarIntel document, message field derived from the document contract, or `actor-manifest`, use `starintel-spec-version` to resolve the consumer lock's active `release_version` and verify the pinned canonical manifest. Never derive the release from a `v0.9.0` schema filename.
+3. Define one stable name and canonical `star://<domain>:<address>:<actor>` URI whose actor component matches the name.
+4. Define accepted and produced message contracts, validators, mailbox capacity, state ownership, restart policy, capabilities, and effect ports.
+5. Keep network, process, storage, and broker effects behind explicit adapters; keep message/state transitions deterministic.
+6. Implement one canonical handler and registration path. Remove obsolete duplicate paths encountered in scope.
+7. Add tests for registration, happy path, invalid input/output, mailbox bounds, state rollback, handler failure, restart/generation, shutdown, and the real adapter boundary used.
+8. Wire startup only through the runtime's maintained hook or composition root.
+9. Run focused ASDF tests and the complete owning repository gate.
 
 ## Rules
 
+- `release_version` is the active StarIntel release; immutable base `schema_version` is a separate dimension.
 - Do not call a manifest, package shell, or registered external reference an executing actor.
 - Do not add a second parser, dispatcher, mailbox, or transport path beside the current authority.
 - Stable actor identity and runtime instance/generation are different values.
