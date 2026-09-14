@@ -9,7 +9,7 @@ description: starintel, auto-dig, osint, recursion, documents, relations, valida
 
 Run one complete evidence-first research loop and leave a validated, traceable next frontier.
 
-Requires web research tools and a current StarIntel Auto-Dig checkout.
+Requires web research tools, a current StarIntel Auto-Dig checkout, and `starintel-spec-version`.
 
 ## Input
 
@@ -21,7 +21,7 @@ A source ledger, canonical documents and relations, a `research-pass`, a green g
 
 ## Loop
 
-1. Read the current checkout's `AGENTS.md`, reuse its canonical dataset root, and record the starting commit.
+1. Read the current checkout's `AGENTS.md`, then use `starintel-spec-version` and the repository-owned `python3 scripts/schema-release.py current` / `check` commands to resolve the active release before interpreting document fields. Reuse the canonical dataset root and record the starting commit.
 2. Use `starintel-local-search` to find existing records, relations, unresolved targets, conflicts, and prior passes.
 3. Use `starintel-osint` for extensive external research and independent corroboration.
 4. Resolve identities and split material into exact document dtypes.
@@ -34,6 +34,7 @@ A source ledger, canonical documents and relations, a `research-pass`, a green g
 
 ## Rules
 
+- `release_version` is the active release; immutable base `schema_version` and `v0.9.0` filenames are not release-number authority.
 - Every conclusion traces to canonical IDs and exact sources; mission plans and selection scores are not evidence.
 - Keep actors or research roles independent until synthesis so shared assumptions do not masquerade as corroboration.
 - Stop recursion at the declared depth/breadth, satisfied question, exhausted credible leads, or repeated unsupported hypothesis.
