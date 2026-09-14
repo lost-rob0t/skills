@@ -33,14 +33,14 @@ jobs:
       - name: Test Task Steward bootstrap adapter
         run: python3 -m unittest tests/test_task_steward_bootstrap.py -v
       - name: Test skill support scripts and workflow discovery
-        run: python3 -m unittest tests/test_support_scripts.py tests/test_system_resource_skills.py tests/test_discover_workflows.py tests/test_git_worktrees.py tests/test_prolog_verification.py tests/test_status_update.py tests/test_youtube_context.py -v
+        run: python3 -m unittest tests/test_support_scripts.py tests/test_system_resource_skills.py tests/test_discover_workflows.py tests/test_git_worktrees.py tests/test_grill_skill.py tests/test_merge_on_green.py tests/test_opencode_worker.py tests/test_prolog_verification.py tests/test_skill_scope.py tests/test_status_update.py tests/test_sync_remotes.py tests/test_youtube_context.py -v
       - name: Validate flake metadata
         run: nix flake metadata
       - name: Verify exported canonical skill names
         run: |
           set -euo pipefail
-          expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","debug-system","discover-workflows","dotfiles-workflow","forgejo-repo-bootstrap","forgejo-skill-edit","free-resources","git","git-worktrees","impeccable","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-project-kb","prolog-reasoning","prolog-verification","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","starintel-wearos-release","status-update","sudo","task-steward-bootstrap","task-steward-worker","youtube-context","zara-mcp"]'
-          agent_zero_expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","debug-system","discover-workflows","dotfiles-workflow","free-resources","git","git-worktrees","impeccable","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-project-kb","prolog-reasoning","prolog-verification","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","starintel-wearos-release","status-update","sudo","task-steward-bootstrap","task-steward-worker","youtube-context","zara-mcp"]'
+          expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","android-adb-deploy","debug-system","discover-workflows","dotfiles-workflow","forgejo-repo-bootstrap","forgejo-skill-edit","free-resources","git","git-worktrees","grill","impeccable","merge-on-green","opencode-orchestrate","opencode-worker","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-project-kb","prolog-reasoning","prolog-verification","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","skill-scope","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-credential-lifecycle","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","starintel-wearos-release","status-update","sudo","task-steward-bootstrap","task-steward-worker","worker-orchestration","youtube-context","zara-mcp"]'
+          agent_zero_expected='["activitywatch-analyze","activitywatch-group","activitywatch-productivity","activitywatch-visualize","adadr","android-adb-deploy","debug-system","discover-workflows","dotfiles-workflow","free-resources","git","git-worktrees","grill","impeccable","merge-on-green","opencode-orchestrate","opencode-worker","ponytail","ponytail-audit","ponytail-debt","ponytail-gain","ponytail-help","ponytail-review","prolog-project-kb","prolog-reasoning","prolog-verification","qtile-confirm","qtile-debug","qtile-edit","qtile-reload","rage","skill-edit","skill-portability","skill-scope","spec","star-lang","starintel-actor-create","starintel-auto-dig","starintel-credential-lifecycle","starintel-document-create","starintel-ingest","starintel-local-search","starintel-osint","starintel-repo-bootstrap","starintel-wearos-release","status-update","sudo","task-steward-bootstrap","task-steward-worker","worker-orchestration","youtube-context","zara-mcp"]'
           test "$(nix eval --json .#lib.skillNames)" = "$expected"
           test "$(nix eval --json .#lib.opencodeSkillNames)" = "$expected"
           test "$(nix eval --json .#lib.agentZeroSkillNames)" = "$agent_zero_expected"
@@ -60,6 +60,7 @@ jobs:
           test -f skills/activitywatch-productivity/SKILL.md
           test -f skills/activitywatch-visualize/SKILL.md
           test -f skills/adadr/SKILL.md
+          test -f skills/android-adb-deploy/SKILL.md
           test -f skills/debug-system/SKILL.md
           test -f skills/discover-workflows/SKILL.md
           test -f skills/dotfiles-workflow/SKILL.md
@@ -69,6 +70,10 @@ jobs:
           test -f skills/git/SKILL.md
           test -f skills/git-worktrees/SKILL.md
           test -f skills/impeccable/SKILL.md
+          test -f skills/grill/SKILL.md
+          test -f skills/merge-on-green/SKILL.md
+          test -f skills/opencode-orchestrate/SKILL.md
+          test -f skills/opencode-worker/SKILL.md
           test -f skills/ponytail/SKILL.md
           test -f skills/ponytail-audit/SKILL.md
           test -f skills/ponytail-debt/SKILL.md
@@ -84,11 +89,13 @@ jobs:
           test -f skills/qtile-reload/SKILL.md
           test -f skills/rage/SKILL.md
           test -f skills/skill-edit/SKILL.md
+          test -f skills/skill-scope/SKILL.md
           test -f skills/skill-portability/SKILL.md
           test -f skills/spec/SKILL.md
           test -f skills/star-lang/SKILL.md
           test -f skills/starintel-actor-create/SKILL.md
           test -f skills/starintel-auto-dig/SKILL.md
+          test -f skills/starintel-credential-lifecycle/SKILL.md
           test -f skills/starintel-document-create/SKILL.md
           test -f skills/starintel-ingest/SKILL.md
           test -f skills/starintel-local-search/SKILL.md
@@ -100,6 +107,7 @@ jobs:
           test -f skills/task-steward-bootstrap/SKILL.md
           test -f skills/task-steward-worker/SKILL.md
           test -f skills/youtube-context/SKILL.md
+          test -f skills/worker-orchestration/SKILL.md
           test -f skills/zara-mcp/SKILL.md
       - name: Verify adapter metadata
         run: |
@@ -111,3 +119,5 @@ jobs:
           test "$(nix eval --raw .#lib.targets.cursor)" = '.cursor/skills'
           test "$(nix eval --raw .#lib.targets.copilot)" = '.copilot/skills'
           test "$(nix eval --raw .#lib.targets.agent-zero)" = 'usr/skills'
+      - name: Build OpenCode worker package
+        run: nix build .#opencode-worker

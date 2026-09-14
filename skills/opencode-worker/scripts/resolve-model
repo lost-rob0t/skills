@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Resolve a logical OpenCode model against the installed model catalog."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("model")
+    parser.add_argument("--config")
+    args = parser.parse_args()
+    default_config = Path(__file__).resolve().parents[1] / "config/models.tsv"
+    config = Path(args.config or os.environ.get("OPENCODE_WORKER_MODEL_CONFIG", default_config))
+    mappings: dict[str, tuple[str, str]] = {}
+    try:
+        for number, raw in enumerate(config.read_text(encoding="utf-8").splitlines(), 1):
+            if not raw or raw.startswith("#"):
+                continue
+            fields = raw.split("\t")
+            if len(fields) not in (2, 3) or not fields[0] or not fields[1]:
+                raise ValueError(f"invalid model mapping at {config}:{number}")
+            mappings[fields[0]] = (fields[1], fields[2] if len(fields) == 3 else "")
+    except (OSError, ValueError) as error:
+        print(f"resolve-model: {error}", file=sys.stderr)
+        return 2
+
+    model, variant = mappings.get(args.model, (args.model, ""))
+    if "/" not in model:
+        print(f"resolve-model: unknown logical model: {args.model}", file=sys.stderr)
+        return 2
+    command = [os.environ.get("OPENCODE_BIN", "opencode"), "models"]
+    try:
+        result = subprocess.run(command, text=True, capture_output=True, check=False)
+    except OSError as error:
+        print(f"resolve-model: cannot run {command[0]}: {error}", file=sys.stderr)
+        return 127
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr)
+        print("resolve-model: model probe failed", file=sys.stderr)
+        return result.returncode
+    if model not in result.stdout.splitlines():
+        print(f"resolve-model: mapped model is unavailable: {model}", file=sys.stderr)
+        return 3
+    print(f"{model}\t{variant}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

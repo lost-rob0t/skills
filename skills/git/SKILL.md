@@ -44,11 +44,30 @@ issue, release, and Actions operations.
 | Releases | `gh release list` / `gh release create` |
 | Actions runs | `gh run list` / `gh run view` |
 
+## Remote synchronization
+
+For `/sync-remotes`, run `scripts/sync-remotes` from the repository. It
+reports branch drift between the canonical remote (the Forgejo host,
+else `origin`) and the mirror remote (GitHub, else the only other
+remote): same, ahead-canonical, ahead-mirror, diverged,
+missing-on-canonical/mirror, missing-remote. Exit 1 means drift,
+warnings, or unfixable state; exit 0 means in sync.
+
+With `--push` it fast-forwards the mirror to canonical for
+ahead-canonical branches only. It refuses to push from a dirty
+worktree, never force-pushes diverged branches, and reports divergence
+for manual reconciliation. Pass `--json` for machine-readable rows.
+
+Never duplicate issues or pull requests across hosts: search the
+canonical host first with `tea`, and only mirror an artifact to GitHub
+when the repository configuration designates GitHub as canonical.
+
 ## Rules
 
 - Use GitHub-native tooling for hosting operations.
 - Do not invoke `tea`, Forgejo APIs, Forgejo Actions, or `git.starintel.actor` for
   Agent Zero workflows.
+- Never duplicate a repository or pull request across hosts.
 - Do not push credentials, token-bearing URLs, or auth output into logs, commits,
   PRs, or issues.
 - Follow each repository's documented branch, PR, review, and CI requirements.

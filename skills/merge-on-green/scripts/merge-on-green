@@ -1,0 +1,357 @@
+#!/usr/bin/env python3
+"""Merge a pull request only after its exact head verified green.
+
+Provider is detected from the origin remote (github.com -> gh,
+git.starintel.actor -> Forgejo REST API). Polling backs off
+exponentially, honors Retry-After, and never merges a head other than
+the one whose required gates and reviews were verified.
+
+Exit codes:
+  0  merged (or already merged)
+  2  usage or configuration error
+  3  persistent provider/API failure
+  4  blocked or budget exhausted (failed/cancelled gate, conflict,
+     review required, draft, closed pull request, head kept changing,
+     poll timeout)
+  5  rate limited beyond the retry budget
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+
+FORGEJO_HOSTS = ("git.starintel.actor",)
+
+
+def log(message: str) -> None:
+    print(f"merge-on-green: {message}", file=sys.stderr)
+
+
+class SystemExit2(Exception):
+    pass
+
+
+class Blocked(Exception):
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
+class ApiError(Exception):
+    def __init__(self, reason: str, retry_after: int | None = None) -> None:
+        super().__init__(reason)
+        self.reason = reason
+        self.retry_after = retry_after
+
+
+def git(*argv: str) -> str:
+    try:
+        result = subprocess.run(["git", *argv], text=True, capture_output=True, check=False)
+    except OSError as error:
+        raise SystemExit2(f"cannot run git: {error}") from error
+    if result.returncode != 0:
+        raise SystemExit2(f"git {' '.join(argv)} failed: {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def detect_provider(repo: str | None, override: str | None) -> str:
+    if override:
+        return override
+    url = git("remote", "get-url", "origin")
+    if "github.com" in url:
+        return "github"
+    if any(host in url for host in FORGEJO_HOSTS):
+        return "forgejo"
+    raise SystemExit2(f"cannot detect provider from origin {url!r}; use --provider")
+
+
+class GithubProvider:
+    def __init__(self, repo: str | None, gh: str) -> None:
+        self.repo = repo
+        self.gh = gh
+
+    def slug(self) -> str:
+        if self.repo:
+            return self.repo
+        url = git("remote", "get-url", "origin")
+        match = re.search(r"github\.com[:/](.+?/.+?)(?:\.git)?$", url)
+        if not match:
+            raise SystemExit2(f"cannot derive owner/name from {url}")
+        return match.group(1)
+
+    def _gh(self, *argv: str) -> str:
+        try:
+            result = subprocess.run([self.gh, *argv], text=True, capture_output=True, check=False)
+        except OSError as error:
+            raise ApiError(f"cannot run {self.gh}: {error}") from error
+        if result.returncode != 0:
+            combined = result.stderr.strip() or result.stdout.strip()
+            lowered = combined.lower()
+            if "rate limit" in lowered or " 429" in lowered or "http 429" in lowered:
+                match = re.search(r"retry[- ]after\D*(\d+)", combined, re.IGNORECASE)
+                raise ApiError(f"gh rate limited: {combined}",
+                               int(match.group(1)) if match else None)
+            raise ApiError(f"gh failed: {combined}")
+        return result.stdout
+
+    def probe(self, number: int) -> dict:
+        raw = self._gh("pr", str(number), "--repo", self.slug(), "--json",
+                       "headRefOid,mergeable,mergeStateStatus,reviewDecision,state")
+        data = json.loads(raw)
+        merge_state = data["mergeStateStatus"]
+        approved = data.get("reviewDecision") == "APPROVED"
+        checks = "pending"
+        if merge_state in ("BLOCKED", "UNSTABLE"):
+            checks = "failure"
+        elif merge_state == "CLEAN":
+            checks = "success"
+        return {
+            "head": data["headRefOid"],
+            "merged": data["state"] == "MERGED",
+            "closed": data["state"] == "CLOSED",
+            "conflict": merge_state == "DIRTY" or data["mergeable"] != "MERGEABLE",
+            "review_required": merge_state == "BLOCKED" and not approved,
+            "checks": checks,
+            "mergeable": data["mergeable"] == "MERGEABLE",
+        }
+
+    def merge(self, number: int) -> None:
+        self._gh("pr", str(number), "--repo", self.slug(), "--merge")
+
+
+class ForgejoProvider:
+    def __init__(self, repo: str | None, host: str | None, timeout: float) -> None:
+        url = git("remote", "get-url", "origin")
+        self.slug = repo or self._slug_from_remote(url)
+        match = re.search(r"(?:https?://|git@)([^/:]+)", url)
+        self.host = host or (match.group(1) if match else None)
+        self.timeout = timeout
+        self.token = os.environ.get("FORGEJO_TOKEN", "")
+        if not self.host:
+            raise SystemExit2(f"cannot derive Forgejo host from {url}; use --host")
+        if not self.token:
+            raise SystemExit2("Forgejo provider requires FORGEJO_TOKEN")
+
+    @staticmethod
+    def _slug_from_remote(url: str) -> str:
+        match = re.search(r"[:/][^/:]+[/:](.+?)(?:\.git)?$", url)
+        if not match:
+            raise SystemExit2(f"cannot derive owner/name from {url}")
+        return match.group(1)
+
+    def _request(self, method: str, path: str, body: dict | None = None) -> dict:
+        url = f"https://{self.host}/api/v1/repos/{self.slug}/{path}"
+        data = json.dumps(body).encode() if body is not None else None
+        request = urllib.request.Request(url, data=data, method=method)
+        request.add_header("Authorization", f"token {self.token}")
+        request.add_header("Content-Type", "application/json")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                payload = response.read()
+        except urllib.error.HTTPError as error:
+            if error.code == 429:
+                retry_after = error.headers.get("Retry-After")
+                delay = int(retry_after) if retry_after and retry_after.isdigit() else None
+                raise ApiError("Forgejo rate limited: HTTP 429", delay) from error
+            raise ApiError(f"Forgejo API HTTP {error.code}: {path}") from error
+        except (urllib.error.URLError, TimeoutError, OSError) as error:
+            raise ApiError(f"Forgejo API unreachable: {error}") from error
+        return json.loads(payload) if payload else {}
+
+    def probe(self, number: int) -> dict:
+        pull = self._request("GET", f"pulls/{number}")
+        merged = bool(pull.get("merged"))
+        closed = pull.get("state") == "closed" and not merged
+        head = (pull.get("head") or {}).get("sha", "")
+        checks = "pending"
+        if head:
+            status = self._request("GET", f"commits/{head}/status")
+            checks = {
+                "success": "success",
+                "pending": "pending",
+                "warning": "pending",
+                "failure": "failure",
+                "error": "failure",
+            }.get(status.get("status", "pending"), "pending")
+        reviews = self._request("GET", f"pulls/{number}/reviews")
+        approved = any(review.get("state", "").lower() == "approved" for review in reviews)
+        mergeable = bool(pull.get("mergeable", False))
+        return {
+            "head": head,
+            "merged": merged,
+            "closed": closed,
+            "conflict": not mergeable,
+            "review_required": checks == "success" and not approved,
+            "checks": checks,
+            "mergeable": mergeable,
+        }
+
+    def merge(self, number: int) -> None:
+        self._request("POST", f"pulls/{number}/merge", {"Do": "merge"})
+
+
+def classify(state: dict) -> str:
+    if state["merged"]:
+        return "merged"
+    if state.get("closed"):
+        return "closed"
+    if state["conflict"] or not state["mergeable"]:
+        return "conflict"
+    if state["review_required"]:
+        return "review_required"
+    if state["checks"] == "failure":
+        return "failed"
+    if state["checks"] == "pending":
+        return "pending"
+    return "ready"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Merge only the exact verified green head.")
+    parser.add_argument("number", type=int, help="pull request number")
+    parser.add_argument("--provider", choices=("github", "forgejo"))
+    parser.add_argument("--repo", help="owner/name slug; default derives from origin")
+    parser.add_argument("--host", help="Forgejo host override")
+    parser.add_argument("--poll-interval", type=float, default=15.0)
+    parser.add_argument("--max-delay", type=float, default=60.0)
+    parser.add_argument("--max-wait", type=float, default=1800.0)
+    parser.add_argument("--max-retries", type=int, default=5,
+                        help="consecutive transient API failures allowed")
+    parser.add_argument("--head-restarts", type=int, default=3,
+                        help="head changes tolerated before giving up")
+    parser.add_argument("--gh", default=os.environ.get("GH_BIN", "gh"))
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+    if args.poll_interval <= 0 or args.max_wait <= 0:
+        parser.error("poll interval and max wait must be positive")
+
+    try:
+        provider_name = detect_provider(args.repo, args.provider)
+        if provider_name == "github":
+            provider: GithubProvider | ForgejoProvider = GithubProvider(args.repo, args.gh)
+        else:
+            provider = ForgejoProvider(args.repo, args.host, timeout=30.0)
+    except SystemExit2 as error:
+        log(str(error))
+        return 2
+
+    deadline = time.monotonic() + args.max_wait
+    delay = args.poll_interval
+    transient_failures = 0
+    head_restarts = 0
+    validated_head: str | None = None
+
+    def note_head(state: dict) -> None:
+        nonlocal validated_head, head_restarts
+        if validated_head is None:
+            validated_head = state["head"]
+            log(f"validating head {validated_head}")
+        elif state["head"] != validated_head:
+            head_restarts += 1
+            if head_restarts > args.head_restarts:
+                raise Blocked(f"head kept changing; gave up after {head_restarts} invalidations")
+            log(f"head changed {validated_head} -> {state['head']}; invalidating green evidence")
+            validated_head = state["head"]
+            log(f"validating new head {validated_head}")
+
+    while True:
+        try:
+            state = provider.probe(args.number)
+        except ApiError as error:
+            rate_limited = "rate limit" in error.reason.lower() or "429" in error.reason
+            transient_failures += 1
+            if transient_failures > args.max_retries:
+                if rate_limited:
+                    log(f"rate limited beyond {args.max_retries} retries")
+                    return 5
+                log(error.reason)
+                return 3
+            if error.retry_after is not None:
+                wait = min(max(error.retry_after, 1), args.max_delay)
+                log(f"rate limited; retry {transient_failures}/{args.max_retries} in {wait:g}s")
+                time.sleep(wait)
+                continue
+            log(f"transient API failure ({transient_failures}/{args.max_retries}): {error.reason}")
+            time.sleep(delay)
+            delay = min(delay * 2, args.max_delay)
+            continue
+
+        transient_failures = 0
+        delay = args.poll_interval
+
+        try:
+            note_head(state)
+        except Blocked as blocked:
+            log(blocked.reason)
+            return 4
+
+        verdict = classify(state)
+        if verdict == "merged":
+            log("pull request is already merged")
+            return 0
+        if verdict == "pending":
+            if time.monotonic() >= deadline:
+                log(f"pending gates exceeded --max-wait {args.max_wait:g}s")
+                return 4
+            log(f"gates pending; next poll in {delay:g}s")
+            time.sleep(delay)
+            continue
+        if verdict != "ready":
+            log(f"not mergeable: {verdict}")
+            return 4
+
+        # Exact-head invariant: re-probe immediately before merging so the
+        # merged commit is the verified commit, then verify post-merge state.
+        try:
+            final = provider.probe(args.number)
+            note_head(final)
+        except (ApiError, Blocked) as error:
+            reason = getattr(error, "reason", str(error))
+            log(f"state changed between validation and merge: {reason}; revalidating")
+            time.sleep(delay)
+            continue
+        if classify(final) != "ready":
+            log("state changed between validation and merge; revalidating")
+            continue
+        if args.dry_run:
+            log(f"dry run: head {validated_head} is green and would be merged")
+            return 0
+        log(f"merging verified head {validated_head}")
+        try:
+            provider.merge(args.number)
+        except ApiError as error:
+            if error.retry_after is not None:
+                log("merge hit a rate limit; revalidating")
+                time.sleep(min(max(error.retry_after, 1), args.max_delay))
+                continue
+            log(f"merge failed: {error.reason}")
+            return 3
+        try:
+            merged = provider.probe(args.number)
+        except ApiError as error:
+            log(f"merge issued but verification probe failed: {error.reason}")
+            return 3
+        if merged["merged"]:
+            log(f"merged head {validated_head}")
+            return 0
+        log("merge command did not result in a merged state")
+        return 3
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except SystemExit2 as error:
+        log(str(error))
+        raise SystemExit(2) from error
+    except KeyboardInterrupt:
+        log("interrupted")
+        raise SystemExit(130) from None

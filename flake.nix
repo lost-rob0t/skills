@@ -1,7 +1,9 @@
 {
   description = "Portable reusable agent skills";
 
-  outputs = { self }:
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+  outputs = { self, nixpkgs }:
     let
       skills = {
         adadr = ./skills/adadr;
@@ -9,6 +11,7 @@
         activitywatch-group = ./skills/activitywatch-group;
         activitywatch-productivity = ./skills/activitywatch-productivity;
         activitywatch-visualize = ./skills/activitywatch-visualize;
+        android-adb-deploy = ./skills/android-adb-deploy;
         debug-system = ./skills/debug-system;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
@@ -18,6 +21,10 @@
         git = ./skills/git;
         git-worktrees = ./skills/git-worktrees;
         impeccable = ./skills/impeccable;
+        grill = ./skills/grill;
+        merge-on-green = ./skills/merge-on-green;
+        opencode-orchestrate = ./skills/opencode-orchestrate;
+        opencode-worker = ./skills/opencode-worker;
         ponytail = ./skills/ponytail;
         ponytail-audit = ./skills/ponytail-audit;
         ponytail-debt = ./skills/ponytail-debt;
@@ -33,11 +40,13 @@
         qtile-reload = ./skills/qtile-reload;
         rage = ./skills/rage;
         skill-edit = ./skills/skill-edit;
+        skill-scope = ./skills/skill-scope;
         skill-portability = ./skills/skill-portability;
         spec = ./skills/spec;
         star-lang = ./skills/star-lang;
         starintel-actor-create = ./skills/starintel-actor-create;
         starintel-auto-dig = ./skills/starintel-auto-dig;
+        starintel-credential-lifecycle = ./skills/starintel-credential-lifecycle;
         starintel-document-create = ./skills/starintel-document-create;
         starintel-ingest = ./skills/starintel-ingest;
         starintel-local-search = ./skills/starintel-local-search;
@@ -49,6 +58,7 @@
         task-steward-bootstrap = ./skills/task-steward-bootstrap;
         task-steward-worker = ./skills/task-steward-worker;
         youtube-context = ./skills/youtube-context;
+        worker-orchestration = ./skills/worker-orchestration;
         zara-mcp = ./skills/zara-mcp;
       };
 
@@ -113,6 +123,11 @@
           skills = agentZeroSkills;
         };
       };
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forAllSystems = f: builtins.listToAttrs (map (system: {
+        name = system;
+        value = f system;
+      }) supportedSystems);
     in
     {
       lib = {
@@ -140,5 +155,25 @@
         cursor = mkSkillLinksModule targets.cursor;
         copilot = mkSkillLinksModule targets.copilot;
       };
+
+      packages = forAllSystems (system:
+        let pkgs = import nixpkgs { inherit system; };
+        in {
+          opencode-worker = pkgs.stdenvNoCC.mkDerivation {
+            pname = "opencode-worker";
+            version = "1.0.0";
+            src = ./skills/opencode-worker;
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            installPhase = ''
+              mkdir -p "$out/lib/opencode-worker" "$out/bin"
+              cp -R config scripts "$out/lib/opencode-worker/"
+              wrapProgram "$out/lib/opencode-worker/scripts/opencode-worker" \
+                --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.bash pkgs.coreutils pkgs.git pkgs.gnugrep pkgs.python3 pkgs.util-linux ]}
+              ln -s "$out/lib/opencode-worker/scripts/opencode-worker" "$out/bin/opencode-worker"
+              ln -s "$out/lib/opencode-worker/scripts/resolve-model" "$out/bin/opencode-worker-resolve-model"
+            '';
+          };
+          default = self.packages.${system}.opencode-worker;
+        });
     };
 }
