@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import sys
 import tempfile
@@ -26,6 +27,10 @@ portability = load_module("portability_audit", "skills/skill-portability/scripts
 hm = load_module("hm_discover", "skills/dotfiles-workflow/scripts/discover-home-manager.py")
 autodig = load_module("autodig_verify", "skills/starintel-auto-dig/scripts/verify.py")
 starlang = load_module("starlang_verify", "skills/star-lang/scripts/verify.py")
+starintel_spec_version = load_module(
+    "starintel_spec_version",
+    "skills/starintel-spec-version/scripts/starintel_spec_version.py",
+)
 zara = load_module("zara_doctor", "skills/zara-mcp/scripts/doctor.py")
 
 
@@ -95,6 +100,35 @@ class SupportScriptTests(unittest.TestCase):
                 autodig.validate_repo(Path(tmp))
             with self.assertRaisesRegex(RuntimeError, "not a Star-Lang checkout"):
                 starlang.validate_repo(Path(tmp))
+
+    def test_starintel_spec_version_resolves_release_not_schema_filename(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            lock_path = Path(tmp) / "starintel-schema.lock.json"
+            lock_path.write_text(
+                json.dumps(
+                    {
+                        "release_version": "0.9.1",
+                        "schema_version": "0.9.0",
+                        "canonical_repository": "example/starintel-schema",
+                        "canonical_commit": "a" * 40,
+                        "schema_path": "schemas/starintel-doc-v0.9.0.schema.json",
+                        "expansion_path": "schemas/starintel-doc-v0.9.0.expansion.json",
+                        "manifest_path": "schemas/starintel-doc-v0.9.0.manifest.json",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            lock = starintel_spec_version.resolve_lock(lock_path)
+            resolved = starintel_spec_version.state(lock)
+            self.assertEqual(resolved["release_version"], "0.9.1")
+            self.assertEqual(resolved["schema_version"], "0.9.0")
+
+    def test_starintel_spec_version_lock_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            lock_path = Path(tmp) / "starintel-schema.lock.json"
+            lock_path.write_text('{"schema_version":"0.9.0"}', encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "release_version"):
+                starintel_spec_version.resolve_lock(lock_path)
 
     def test_zara_doctor_redacts_common_secret_shapes(self) -> None:
         text = (
