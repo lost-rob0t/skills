@@ -49,6 +49,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `merge-on-green` - exact-head GitHub and Forgejo merge gating.
 - `opencode-orchestrate` - continuation, status, handoff, and autonomous execution.
 - `opencode-worker` - opencode, worker, models, retries, isolation, automation.
+- `prolog-project-kb` - prolog, memory, todo, debugging, tools, knowledge.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `prolog-verification` - prolog, verification, evidence, invariants, worktrees, brave, hooks.
 - `qtile-confirm` - qtile, screenshots, vision, visual-regression, bar-layout.
@@ -68,6 +69,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `starintel-local-search` - starintel, local-search, jsonl, ndjson, relations, corpus.
 - `starintel-osint` - starintel, osint, research, evidence, provenance, corroboration, sources.
 - `starintel-repo-bootstrap` - github, repositories, adard, issues, bootstrap, provenance.
+- `starintel-wearos-release` - starintel, wearos, android, release, apk, github, nix, tagging.
 - `status-update` - notify-send, dunst, libnotify, desktop-notifications, status, task-completion.
 - `sudo` - sudo, privilege-escalation, desktop-portals, xdg-desktop-portal, polkit, authentication.
 - `task-steward-bootstrap` - steward, bootstrap, a0, opencode, agents, adapters.

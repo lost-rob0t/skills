@@ -48,6 +48,15 @@ class PrologVerificationTest(unittest.TestCase):
             check=check,
         )
 
+    def head(self):
+        return subprocess.check_output(
+            ["git", "-C", str(self.root), "rev-parse", "HEAD"],
+            text=True,
+        ).strip()
+
+    def run_file(self):
+        return self.root / ".prolog" / "runs" / f"run-{self.head()}.pl"
+
     def initialize_and_observe(self):
         self.run_script("init", "--task", "test-task", check=True)
         result = self.run_script("observe", "--", sys.executable, "-c", "print('green')")
@@ -56,12 +65,15 @@ class PrologVerificationTest(unittest.TestCase):
     def test_init_observe_and_check_current_state(self):
         self.initialize_and_observe()
         facts = (self.root / ".prolog" / "facts.kb").read_text(encoding="utf-8")
-        self.assertIn("observation(", facts)
-        self.assertIn("exit(0)", facts)
+        run = self.run_file().read_text(encoding="utf-8")
+        self.assertNotIn("observation(", facts)
+        self.assertIn("observation(", run)
+        self.assertIn("exit(0)", run)
         result = self.run_script("check")
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads((self.root / ".prolog" / "result.json").read_text(encoding="utf-8"))
         self.assertEqual(report["status"], "pass")
+        self.assertEqual(report["run_file"], self.run_file().name)
 
     def test_check_rejects_stale_evidence_before_swipl(self):
         self.initialize_and_observe()
@@ -76,6 +88,7 @@ class PrologVerificationTest(unittest.TestCase):
         self.run_script("init", "--task", "failure", check=True)
         result = self.run_script("observe", "--", sys.executable, "-c", "raise SystemExit(7)")
         self.assertEqual(result.returncode, 7)
+        self.assertIn("exit(7)", self.run_file().read_text(encoding="utf-8"))
         checked = self.run_script("check")
         self.assertEqual(checked.returncode, 1)
         self.assertIn("no successful machine observation", checked.stderr)
@@ -86,10 +99,27 @@ class PrologVerificationTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("example.invalid", result.stdout)
         facts = (self.root / ".prolog" / "facts.kb").read_text(encoding="utf-8")
+        run = self.run_file().read_text(encoding="utf-8")
         self.assertIn("research_required(true).", facts)
-        self.assertIn("brave_search(", facts)
+        self.assertIn("brave_search(", run)
         checked = self.run_script("check")
         self.assertEqual(checked.returncode, 0, checked.stderr)
+
+    def test_run_file_churn_does_not_stale_evidence(self):
+        self.initialize_and_observe()
+        with self.run_file().open("a", encoding="utf-8") as handle:
+            handle.write("todo(example, active).\n")
+        checked = self.run_script("check")
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+
+    def test_durable_kb_change_stales_evidence(self):
+        self.initialize_and_observe()
+        kb = self.root / ".prolog" / "kb"
+        kb.mkdir(parents=True)
+        (kb / "knowledge.pl").write_text("tool(swipl).\n", encoding="utf-8")
+        checked = self.run_script("check")
+        self.assertEqual(checked.returncode, 1)
+        self.assertIn("stale", checked.stderr)
 
     def test_stop_hook_blocks_only_after_session_change(self):
         hook = {"session_id": "session-1", "cwd": str(self.root)}

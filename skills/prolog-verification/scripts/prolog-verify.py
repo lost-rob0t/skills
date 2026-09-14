@@ -24,6 +24,13 @@ VERIFY_TEMPLATE = r"""% Task-specific verification for the current worktree.
 :- use_module(library(time)).
 :- ensure_loaded('facts.kb').
 
+load_current_run :-
+    repo_state(Head, _),
+    atomic_list_concat(['runs/run-', Head, '.pl'], RunFile),
+    ( exists_file(RunFile) -> ensure_loaded(RunFile) ; true ).
+
+:- load_current_run.
+
 current_successful_observation :-
     repo_state(Head, Digest),
     observation(_, _, exit(0), _, Head, Digest).
@@ -125,17 +132,43 @@ def hash_file(hasher: "hashlib._Hash", root: Path, path: Path) -> None:
     hasher.update(payload)
 
 
+def is_runtime_prolog_path(relative: Path) -> bool:
+    if not relative.parts or relative.parts[0] != ".prolog":
+        return False
+    if len(relative.parts) >= 2 and relative.parts[1] in {"runs", "sessions"}:
+        return True
+    return relative.as_posix() in {
+        ".prolog/facts.kb",
+        ".prolog/verify.pl",
+        ".prolog/result.json",
+        ".prolog/.facts.lock",
+    }
+
+
 def repository_state(root: Path) -> tuple[str, str]:
     head_probe = run_git(root, "rev-parse", "HEAD", check=False)
     if head_probe.returncode == 0:
         head = head_probe.stdout.decode().strip()
-        diff = run_git(root, "diff", "--binary", "HEAD", "--", ".", ":(exclude).prolog/**").stdout
+        diff = run_git(
+            root,
+            "diff",
+            "--binary",
+            "HEAD",
+            "--",
+            ".",
+            ":(exclude).prolog/facts.kb",
+            ":(exclude).prolog/verify.pl",
+            ":(exclude).prolog/result.json",
+            ":(exclude).prolog/.facts.lock",
+            ":(exclude).prolog/runs/**",
+            ":(exclude).prolog/sessions/**",
+        ).stdout
         others = run_git(root, "ls-files", "--others", "--exclude-standard", "-z", "--", ".").stdout
         hasher = hashlib.sha256(diff)
         names = sorted(name for name in others.split(b"\0") if name)
         for raw_name in names:
             relative = Path(os.fsdecode(raw_name))
-            if relative.parts and relative.parts[0] == ".prolog":
+            if is_runtime_prolog_path(relative):
                 continue
             path = root / relative
             if path.exists() or path.is_symlink():
@@ -147,7 +180,9 @@ def repository_state(root: Path) -> tuple[str, str]:
         relative = path.relative_to(root)
         if not path.is_file() and not path.is_symlink():
             continue
-        if relative.parts and relative.parts[0] in {".git", ".prolog"}:
+        if relative.parts and relative.parts[0] == ".git":
+            continue
+        if is_runtime_prolog_path(relative):
             continue
         hash_file(hasher, root, path)
     return "no-git", hasher.hexdigest()
@@ -156,6 +191,11 @@ def repository_state(root: Path) -> tuple[str, str]:
 def paths(root: Path) -> tuple[Path, Path, Path, Path]:
     prolog_dir = root / ".prolog"
     return prolog_dir, prolog_dir / "facts.kb", prolog_dir / "verify.pl", prolog_dir / "result.json"
+
+
+def run_path(prolog_dir: Path, head: str) -> Path:
+    safe_head = re.sub(r"[^A-Za-z0-9_.-]", "_", head)
+    return prolog_dir / "runs" / f"run-{safe_head}.pl"
 
 
 def ensure_workspace(root: Path) -> tuple[Path, Path, Path, Path]:
@@ -179,11 +219,11 @@ def update_state(facts: Path, head: str, digest: str) -> None:
     atomic_write(facts, replace_fact(text, "repo_state", line))
 
 
-def append_fact(facts: Path, line: str) -> None:
-    text = facts.read_text(encoding="utf-8")
+def append_fact(path: Path, line: str) -> None:
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
     if text and not text.endswith("\n"):
         text += "\n"
-    atomic_write(facts, text + line + "\n")
+    atomic_write(path, text + line + "\n")
 
 
 def init_workspace(root: Path, task: str, force: bool) -> None:
@@ -194,7 +234,7 @@ def init_workspace(root: Path, task: str, force: bool) -> None:
     prolog_dir.mkdir(parents=True, exist_ok=True)
     atomic_write(
         facts,
-        "% Ground facts and machine observations for this worktree.\n"
+        "% Ground task/control facts for this worktree. Machine observations live in runs/run-<HEAD>.pl.\n"
         f"task({atom(task)}).\n"
         f"repo_state({atom(head)}, {atom(digest)}).\n"
         "research_required(false).\n",
@@ -235,7 +275,7 @@ def observe(root: Path, command: Sequence[str]) -> int:
     )
     with facts_lock(prolog_dir):
         update_state(facts, head, digest)
-        append_fact(facts, line)
+        append_fact(run_path(prolog_dir, head), line)
     return completed.returncode
 
 
@@ -261,7 +301,7 @@ def record_brave_payload(root: Path, query: str, payload: bytes) -> None:
         update_state(facts, head, digest)
         text = facts.read_text(encoding="utf-8")
         atomic_write(facts, replace_fact(text, "research_required", "research_required(true)."))
-        append_fact(facts, line)
+        append_fact(run_path(prolog_dir, head), line)
 
 
 def record_brave(root: Path, query: str, result_file: Path) -> None:
@@ -318,6 +358,8 @@ def check_workspace(root: Path) -> tuple[bool, str]:
     prolog_dir, facts, verify, result = ensure_workspace(root)
     head, digest = repository_state(root)
     fact_text = facts.read_text(encoding="utf-8")
+    current_run = run_path(prolog_dir, head)
+    run_text = current_run.read_text(encoding="utf-8") if current_run.is_file() else ""
     expected_state = f"repo_state({atom(head)}, {atom(digest)})."
     state_lines = [line for line in fact_text.splitlines() if line.startswith("repo_state(")]
     error = None
@@ -325,14 +367,14 @@ def check_workspace(root: Path) -> tuple[bool, str]:
         error = "verification evidence is stale for the current HEAD/worktree digest"
     current_suffix = f", {atom(head)}, {atom(digest)})."
     observations = [
-        line for line in fact_text.splitlines()
+        line for line in run_text.splitlines()
         if line.startswith("observation(") and ", exit(0)," in line and line.endswith(current_suffix)
     ]
     if error is None and not observations:
         error = "no successful machine observation exists for the current workspace state"
     research_required = "research_required(true)." in fact_text.splitlines()
     brave = [
-        line for line in fact_text.splitlines()
+        line for line in run_text.splitlines()
         if line.startswith("brave_search(") and line.endswith(current_suffix)
     ]
     if error is None and research_required and not brave:
@@ -344,6 +386,8 @@ def check_workspace(root: Path) -> tuple[bool, str]:
         "worktree_digest": digest,
         "facts_sha256": hashlib.sha256(facts.read_bytes()).hexdigest(),
         "verify_sha256": hashlib.sha256(verify.read_bytes()).hexdigest(),
+        "run_file": current_run.name,
+        "run_sha256": hashlib.sha256(current_run.read_bytes()).hexdigest() if current_run.is_file() else None,
     }
     if error is not None:
         write_result(result, {**base, "status": "fail", "reason": error})
