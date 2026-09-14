@@ -35,6 +35,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `activitywatch-group` - activitywatch, window-groups, qtile, clustering, routing.
 - `activitywatch-productivity` - activitywatch, productivity, friction, routines, recommendations.
 - `activitywatch-visualize` - activitywatch, visualization, timelines, heatmaps, privacy.
+- `android-adb-deploy` - android, adb, wireless-debugging, apk, build, deploy, wearos.
 - `debug-system` - debug, cpu, io, memory, pressure, diagnostics, performance.
 - `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
@@ -44,6 +45,10 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `git` - git, forgejo, github, hosting, remote, fallback, pr, issues.
 - `git-worktrees` - git, worktrees, parallel-work, branch-isolation, pr-review, cleanup.
 - `impeccable` - design, frontend, ui, ux, audit, polish, accessibility, impeccable. External integration of `pbakaus/impeccable` (Apache-2.0).
+- `grill` - evidence-based aggressive cross-examination of plans and implementations.
+- `merge-on-green` - exact-head GitHub and Forgejo merge gating.
+- `opencode-orchestrate` - continuation, status, handoff, and autonomous execution.
+- `opencode-worker` - opencode, worker, models, retries, isolation, automation.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `prolog-verification` - prolog, verification, evidence, invariants, worktrees, brave, hooks.
 - `qtile-confirm` - qtile, screenshots, vision, visual-regression, bar-layout.
@@ -52,10 +57,12 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `qtile-reload` - qtile, reload, IPC, validation, runtime-verification.
 - `rage` - rage, issues, research, design, tdd, verification, ci, merge.
 - `skill-edit` - skills, editing, validation, gitflow, pull-request, CI.
+- `skill-scope` - explicit project-local versus global skill discovery and ownership.
 - `skill-portability` - portability, dependencies, configuration, redaction, adapters.
 - `star-lang` - star-lang, common-lisp, compiler, runtime, actors, manifests, nix.
 - `starintel-actor-create` - starintel, actors, star-lang, sento, plugins, manifests, testing.
 - `starintel-auto-dig` - starintel, auto-dig, osint, recursion, documents, relations, validation.
+- `starintel-credential-lifecycle` - starintel, api-keys, scopes, rotation, agent-zero, easypg.
 - `starintel-document-create` - starintel, documents, relations, schema, validation, local-db.
 - `starintel-ingest` - starintel, ingest, jsonl, local-db, remote-api, validation.
 - `starintel-local-search` - starintel, local-search, jsonl, ndjson, relations, corpus.
@@ -66,6 +73,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `task-steward-bootstrap` - steward, bootstrap, a0, opencode, agents, adapters.
 - `task-steward-worker` - steward, rage, leases, fencing, heartbeat, receipts.
 - `youtube-context` - youtube, transcripts, yt-dlp, whisper, video-context.
+- `worker-orchestration` - bounded model routing, delegation, fleets, and review workers.
 - `zara-mcp` - zara, mcp, stdio, http, tools, resources, prompts, debugging.
 
 ## Portable dependencies
@@ -86,7 +94,9 @@ Raw backups and redaction maps do not belong in this repository, issues, PRs, or
 
 ## Flake and adapters
 
-The flake exports the canonical catalog as `lib.skills` and `lib.skillNames`. Existing consumers may continue using the compatibility aliases `lib.opencodeSkills` and `lib.opencodeSkillNames`.
+The flake exports the canonical catalog as `lib.skills` and `lib.skillNames`. Existing consumers may continue using the compatibility aliases `lib.opencodeSkills` and `lib.opencodeSkillNames`. The worker helper is installable as `packages.<system>.opencode-worker` or the default package.
+
+Skill support scripts are executable helpers invoked from their skill directory: `skills/opencode-worker/scripts/opencode-worker` (Unix-filter worker contract), `skills/opencode-worker/scripts/resolve-model` (logical model resolution against the live catalog), `skills/merge-on-green/scripts/merge-on-green` (exact-head GitHub/Forgejo merge gating), `skills/git/scripts/sync-remotes` (canonical/mirror branch drift reporting), and `skills/skill-scope/scripts/skill-scope` (project-local versus global skill inventory).
 
 Per-client outputs cover OpenCode, Claude Code, generic Agent Skills, Codex, Cursor, GitHub Copilot, and Agent Zero. Fixed user-global clients have Home Manager modules under `homeManagerModules`; Agent Zero uses `lib.mkAgentZeroHomeManagerModule` because its `usr/skills` path is relative to the installation root.
 

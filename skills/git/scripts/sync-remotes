@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+# Report (and optionally fast-forward) branch drift between two remotes.
+#
+# The canonical remote is the Forgejo host (git.starintel.actor) when it is
+# configured, otherwise `origin`. The mirror remote is the GitHub remote when
+# configured. For every branch visible on either remote the helper reports:
+#
+#   same                both remotes point at the same commit
+#   ahead-canonical     canonical has commits the mirror lacks
+#   ahead-mirror        mirror has commits canonical lacks
+#   diverged            both sides have unique commits (never auto-forced)
+#   missing-on-canonical / missing-on-mirror
+#
+# Without --push this is strictly read-only drift reporting (exit 1 when any
+# drift exists). With --push, ahead-canonical branches are fast-forward
+# pushed to the mirror; diverged branches are only reported. A dirty
+# worktree blocks all pushes.
+#
+# Issues and pull requests are intentionally out of scope here: never
+# duplicate artifacts across hosts; reconcile them through the `git` skill
+# (tea for Forgejo, gh for GitHub) using each host's own search.
+#
+# Exit codes: 0 in sync (or push completed), 1 drift or warning, 2 usage error.
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: sync-remotes [--canonical NAME] [--mirror NAME] [--push] [--json]
+EOF
+}
+
+die() { printf 'sync-remotes: %s\n' "$*" >&2; exit 2; }
+
+canonical_arg="" mirror_arg="" push=false json=false
+while (($#)); do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --canonical) (($# >= 2)) || die "--canonical requires a name"; canonical_arg="$2"; shift 2 ;;
+    --mirror) (($# >= 2)) || die "--mirror requires a name"; mirror_arg="$2"; shift 2 ;;
+    --push) push=true; shift ;;
+    --json) json=true; shift ;;
+    *) die "unknown option: $1" ;;
+  esac
+done
+
+command -v git >/dev/null 2>&1 || die "git is required"
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a Git repository"
+
+remote_url() { git remote get-url "$1" 2>/dev/null || true; }
+
+canonical="$canonical_arg"
+if [[ -z "$canonical" ]]; then
+  for name in $(git remote); do
+    if [[ "$(remote_url "$name")" == *git.starintel.actor* ]]; then
+      canonical="$name"
+      break
+    fi
+  done
+  [[ -n "$canonical" ]] || { git remote get-url origin >/dev/null 2>&1 && canonical="origin"; }
+fi
+[[ -n "$canonical" ]] || die "no canonical remote found; use --canonical"
+
+mirror="$mirror_arg"
+if [[ -z "$mirror" && -z "$mirror_arg" ]]; then
+  for name in $(git remote); do
+    [[ "$name" == "$canonical" ]] && continue
+    if [[ "$(remote_url "$name")" == *github.com* ]]; then
+      mirror="$name"
+      break
+    fi
+  done
+  if [[ -z "$mirror" ]]; then
+    others=($(git remote | grep -vx "$canonical" || true))
+    ((${#others[@]} == 1)) && mirror="${others[0]}"
+  fi
+fi
+
+declare -a missing=()
+drift=0
+[[ "$(git remote)" == *"$canonical"* ]] || missing+=("$canonical")
+[[ -z "$mirror" ]] || [[ "$(git remote)" == *"$mirror"* ]] || missing+=("$mirror")
+((${#missing[@]} == 0)) || drift=1
+for name in "${missing[@]}"; do
+  printf 'missing-remote\t%s\t\n' "$name"
+done
+
+for name in "$canonical" "${mirror:+$mirror}"; do
+  [[ -n "$name" ]] || continue
+  git remote get-url "$name" >/dev/null 2>&1 || continue
+  git fetch --quiet --prune "$name" 2>/dev/null || true
+done
+
+branch_heads() {
+  local remote="$1"
+  git for-each-ref "refs/remotes/$remote" --format='%(refname:lstrip=3)%09%(objectname)' \
+    | grep -v $'^HEAD\t' || true
+}
+
+declare -a branches=()
+while IFS=$'\t' read -r branch _; do
+  [[ -n "$branch" ]] || continue
+  branches+=("$branch")
+done < <(
+  {
+    branch_heads "$canonical"
+    [[ -n "$mirror" ]] && branch_heads "$mirror"
+  } | sort -u
+)
+
+current="$(git branch --show-current || true)"
+[[ -z "$current" ]] || branches+=("$current")
+
+mapfile -t branches < <(printf '%s\n' "${branches[@]}" | sort -u | grep -v '^$' || true)
+
+head_of() {
+  local remote="$1" branch="$2"
+  git rev-parse --verify --quiet "refs/remotes/$remote/$branch" || true
+}
+
+rows=()
+for branch in "${branches[@]}"; do
+  c="$(head_of "$canonical" "$branch")"
+  m=""
+  [[ -n "$mirror" ]] && m="$(head_of "$mirror" "$branch")"
+  if [[ -z "$c" && -z "$m" ]]; then
+    continue
+  fi
+  if [[ -z "$m" ]]; then
+    state="missing-on-mirror"
+  elif [[ -z "$c" ]]; then
+    state="missing-on-canonical"
+  elif [[ "$c" == "$m" ]]; then
+    state="same"
+  elif git merge-base --is-ancestor "$m" "$c" >/dev/null 2>&1; then
+    state="ahead-canonical"
+  elif git merge-base --is-ancestor "$c" "$m" >/dev/null 2>&1; then
+    state="ahead-mirror"
+  else
+    state="diverged"
+  fi
+  [[ "$state" == "same" ]] || drift=1
+  rows+=("$branch"$'\t'"$state"$'\t'"${c:0:12}"$'\t'"${m:0:12}")
+done
+
+if "$json"; then
+  printf '['
+  first=true
+  for row in "${rows[@]}"; do
+    IFS=$'\t' read -r branch state c m <<<"$row"
+    "$first" || printf ','
+    first=false
+    printf '{"branch":"%s","state":"%s","canonical":"%s","mirror":"%s"}' \
+      "$branch" "$state" "$c" "$m"
+  done
+  printf ']\n'
+else
+  ((${#rows[@]})) && printf 'branch\tstate\tcanonical\tmirror\n'
+  for row in "${rows[@]}"; do printf '%s\n' "$row"; done
+fi
+
+if ! "$push"; then
+  exit "$drift"
+fi
+
+dirty="$(git status --porcelain)"
+if [[ -n "$dirty" ]]; then
+  printf 'sync-remotes: dirty worktree; refusing to push\n' >&2
+  exit 1
+fi
+
+for name in "${missing[@]}"; do
+  printf 'sync-remotes: cannot push; remote %s is missing\n' "$name" >&2
+  exit 1
+done
+
+failed=0
+for row in "${rows[@]}"; do
+  IFS=$'\t' read -r branch state c m <<<"$row"
+  case "$state" in
+    ahead-canonical)
+      printf 'sync-remotes: pushing %s to %s\n' "$branch" "$mirror" >&2
+      if ! git push --quiet "$mirror" "refs/remotes/$canonical/$branch:refs/heads/$branch"; then
+        printf 'sync-remotes: push of %s failed (remote refused non-fast-forward?)\n' "$branch" >&2
+        failed=1
+      fi
+      ;;
+    diverged | missing-on-canonical)
+      printf 'sync-remotes: cannot fast-forward %s (%s); manual reconciliation required\n' "$branch" "$state" >&2
+      failed=1
+      ;;
+  esac
+done
+
+exit "$failed"

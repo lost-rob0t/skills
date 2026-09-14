@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() { printf 'Usage: skill-scope list [--project DIR] [--global-checkout DIR]\n'; }
+[[ "${1:-}" == list ]] || { usage >&2; exit 2; }
+shift
+project="$PWD"
+global_checkout="${OPENCODE_GLOBAL_SKILLS_CHECKOUT:-$HOME/Documents/AI/skills}"
+while (($#)); do
+  case "$1" in
+    --project) [[ $# -ge 2 ]] || exit 2; project="$2"; shift 2 ;;
+    --global-checkout) [[ $# -ge 2 ]] || exit 2; global_checkout="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) printf 'skill-scope: unknown option: %s\n' "$1" >&2; exit 2 ;;
+  esac
+done
+
+emit() {
+  scope="$1" root="$2"
+  [[ -d "$root" ]] || return 0
+  for path in "$root"/*/SKILL.md; do
+    [[ -e "$path" ]] || continue
+    printf '%s\t%s\t%s\n' "$scope" "$(basename "$(dirname "$path")")" "$path"
+  done
+}
+emit local "$project/.opencode/skills"
+emit local "$project/.agents/skills"
+emit global "$global_checkout/skills"

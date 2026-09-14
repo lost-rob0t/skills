@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: opencode-worker [OPTIONS] < prompt
+  --model MODEL             logical name or provider/model
+  --variant VARIANT         override mapped variant
+  --role ROLE               prompt metadata (never forwarded as a CLI flag)
+  --format text|json        output format (default: text)
+  --mode readonly|isolated-mutate
+  --max-retries N           rate-limit retries (default: 3)
+  --max-delay SECONDS       largest retry delay (default: 60)
+  --max-prompt-bytes BYTES  reject prompts above BYTES (default 131072)
+  --lock-file PATH          optional exclusive flock
+  --agent, --dir, --session, --continue, --fork, --attach, --title
+EOF
+}
+
+die() { printf 'opencode-worker: %s\n' "$*" >&2; exit 2; }
+need_value() { (($# >= 2)) || die "$1 requires a value"; }
+
+script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+opencode_bin="${OPENCODE_BIN:-opencode}"
+model="" variant="" role="worker" format="text" mode="readonly"
+dir="" lock_file="" max_retries=3 max_delay=60 max_prompt_bytes=131072
+declare -a forwarded=()
+session_mode=false
+
+while (($#)); do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --model) need_value "$@"; model="$2"; shift 2 ;;
+    --variant) need_value "$@"; variant="$2"; shift 2 ;;
+    --role) need_value "$@"; role="$2"; shift 2 ;;
+    --format) need_value "$@"; format="$2"; shift 2 ;;
+    --mode) need_value "$@"; mode="$2"; shift 2 ;;
+    --max-retries) need_value "$@"; max_retries="$2"; shift 2 ;;
+    --max-delay) need_value "$@"; max_delay="$2"; shift 2 ;;
+    --max-prompt-bytes) need_value "$@"; max_prompt_bytes="$2"; shift 2 ;;
+    --lock-file) need_value "$@"; lock_file="$2"; shift 2 ;;
+    --dir) need_value "$@"; dir="$2"; forwarded+=(--dir "$2"); shift 2 ;;
+    --agent|--session|--attach|--title)
+      need_value "$@"; [[ "$1" == --session ]] && session_mode=true
+      forwarded+=("$1" "$2"); shift 2 ;;
+    --continue) session_mode=true; forwarded+=(--continue); shift ;;
+    --fork) forwarded+=(--fork); shift ;;
+    --) shift; (($# == 0)) || die "positional arguments are not accepted" ;;
+    *) die "unknown option: $1" ;;
+  esac
+done
+
+[[ "$format" == text || "$format" == json ]] || die "format must be text or json"
+[[ "$mode" == readonly || "$mode" == isolated-mutate ]] || die "invalid mode: $mode"
+[[ "$max_retries" =~ ^[0-9]+$ ]] || die "max retries must be a non-negative integer"
+[[ "$max_delay" =~ ^[0-9]+$ ]] || die "max delay must be a non-negative integer"
+[[ "$max_prompt_bytes" =~ ^[0-9]+$ ]] || die "max prompt bytes must be a non-negative integer"
+[[ -n "$model" ]] || die "--model is required"
+[[ ! -t 0 ]] || die "prompt must be provided on stdin"
+
+if [[ "$mode" == isolated-mutate ]]; then
+  [[ -n "$dir" ]] || die "isolated mutation requires --dir"
+  $session_mode && die "mutating mode rejects shared --session/--continue state"
+  git_dir="$(git -C "$dir" rev-parse --absolute-git-dir 2>/dev/null)" || die "mutation directory is not a Git worktree"
+  common_dir="$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || die "cannot inspect worktree"
+  [[ "$git_dir" != "$common_dir" ]] || die "mutation requires an isolated linked worktree"
+fi
+
+resolved="$(OPENCODE_BIN="$opencode_bin" "$script_dir/resolve-model" "$model")" || exit $?
+IFS=$'\t' read -r resolved_model mapped_variant <<<"$resolved"
+[[ -n "$variant" ]] || variant="$mapped_variant"
+
+prompt_file="$(mktemp "${TMPDIR:-/tmp}/opencode-worker.prompt.XXXXXX")"
+stdout_file="$(mktemp "${TMPDIR:-/tmp}/opencode-worker.stdout.XXXXXX")"
+stderr_file="$(mktemp "${TMPDIR:-/tmp}/opencode-worker.stderr.XXXXXX")"
+child_pid=""
+cleanup() { rm -f -- "$prompt_file" "$stdout_file" "$stderr_file"; }
+cancel() {
+  signal="$1"
+  [[ -z "$child_pid" ]] || kill -"$signal" "$child_pid" 2>/dev/null || true
+  cleanup
+  [[ "$signal" == INT ]] && exit 130
+  exit 143
+}
+trap cleanup EXIT
+trap 'cancel INT' INT
+trap 'cancel TERM' TERM
+cat >"$prompt_file"
+[[ -s "$prompt_file" ]] || die "empty prompt on stdin"
+
+if [[ -n "$lock_file" ]]; then
+  command -v flock >/dev/null 2>&1 || die "--lock-file requires flock"
+  exec 9>"$lock_file"
+  flock 9
+fi
+
+prompt_prefix="Role: $role"
+if [[ "$mode" == readonly ]]; then
+  prompt_prefix+=$'\nMode: read-only. Do not modify files or external state.'
+else
+  prompt_prefix+=$'\nMode: mutation is authorized only inside the isolated worktree.'
+fi
+# Sentinel prevents command substitution from stripping prompt trailing newlines.
+prompt="$(printf '%s\n\n' "$prompt_prefix"; cat "$prompt_file"; printf x)"
+prompt="${prompt%x}"
+# OpenCode takes the prompt as one argv element, which Linux caps near 128 KiB.
+prompt_bytes="$(printf %s "$prompt" | wc -c)"
+if ((prompt_bytes >= max_prompt_bytes)); then
+  die "prompt is $prompt_bytes bytes, at or above --max-prompt-bytes $max_prompt_bytes; split the task into smaller prompts (Linux caps a single process argument near 128 KiB, so raising the limit cannot succeed)"
+fi
+
+declare -a command=("$opencode_bin" run --model "$resolved_model" --format "$([[ "$format" == text ]] && printf default || printf json)")
+[[ -z "$variant" ]] || command+=(--variant "$variant")
+command+=("${forwarded[@]}" "$prompt")
+
+attempt=0
+while true; do
+  : >"$stdout_file"; : >"$stderr_file"
+  set +e
+  "${command[@]}" >"$stdout_file" 2>"$stderr_file" & child_pid=$!
+  wait "$child_pid"; status=$?
+  child_pid=""
+  set -e
+  if ((status == 0)); then
+    cat "$stdout_file"
+    cat "$stderr_file" >&2
+    exit 0
+  fi
+  cat "$stderr_file" >&2
+  if ((attempt >= max_retries)) || ! grep -Eiq '(^|[^0-9])429([^0-9]|$)|rate[ -]?limit|too many requests' "$stderr_file"; then
+    cat "$stdout_file"
+    exit "$status"
+  fi
+  retry_after="$(grep -Eio 'retry-after[^0-9]*[0-9]+' "$stderr_file" | grep -Eo '[0-9]+' | head -n 1 || true)"
+  delay="${retry_after:-$((1 << attempt))}"
+  ((delay > max_delay)) && delay="$max_delay"
+  attempt=$((attempt + 1))
+  printf 'opencode-worker: rate limited; retry %d/%d in %ss\n' "$attempt" "$max_retries" "$delay" >&2
+  sleep "$delay" & child_pid=$!
+  wait "$child_pid"; child_pid=""
+done

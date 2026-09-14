@@ -58,6 +58,24 @@ Notes:
   the Forgejo API (`/api/v1/repos/{owner}/{repo}/commits/{sha}/status`)
   or the Actions run listing; `gh pr checks` has no `tea` equivalent.
 
+## Remote synchronization
+
+For `/sync-remotes`, run `scripts/sync-remotes` from the repository. It
+reports branch drift between the canonical remote (the Forgejo host,
+else `origin`) and the mirror remote (GitHub, else the only other
+remote): same, ahead-canonical, ahead-mirror, diverged,
+missing-on-canonical/mirror, missing-remote. Exit 1 means drift,
+warnings, or unfixable state; exit 0 means in sync.
+
+With `--push` it fast-forwards the mirror to canonical for
+ahead-canonical branches only. It refuses to push from a dirty
+worktree, never force-pushes diverged branches, and reports divergence
+for manual reconciliation. Pass `--json` for machine-readable rows.
+
+Never duplicate issues or pull requests across hosts: search the
+canonical host first with `tea`, and only mirror an artifact to GitHub
+when the repository configuration designates GitHub as canonical.
+
 ## Rules
 
 - Use the host's native CLI for every hosting operation; do not hand-roll
