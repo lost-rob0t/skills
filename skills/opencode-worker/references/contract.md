@@ -25,3 +25,7 @@ time. Split large tasks into smaller prompts.
 Retries recognize exit failures containing HTTP 429, `rate limit`, or
 `too many requests`. `Retry-After` integer seconds are preferred; otherwise the
 delay doubles from one second. Every delay is capped by `--max-delay`.
+
+Result output streams through write-sized chunks, so a downstream consumer that
+closes stdout early terminates the worker with status 141 instead of silently
+dropping the transfer.

@@ -52,6 +52,8 @@ print('diagnostic', file=sys.stderr)
                               capture_output=True, env=self.env(**env), check=False)
 
     def calls(self) -> list[list[str]]:
+        if not self.log.exists():
+            return []
         return [json.loads(line) for line in self.log.read_text().splitlines()]
 
     def test_text_mapping_role_metadata_and_options(self) -> None:
@@ -183,7 +185,7 @@ print('diagnostic', file=sys.stderr)
         fake.stdout.close()
         self.addCleanup(fake.stdout.close)
         self.assertEqual(head.wait(timeout=10), 0)
-        self.assertIn(fake.wait(timeout=15), (0, 141))
+        self.assertEqual(fake.wait(timeout=15), 141)
 
     def test_sigterm_is_forwarded_and_returns_143(self) -> None:
         proc = subprocess.Popen([str(WORKER), "--model", "astra-medium"], stdin=subprocess.PIPE,
