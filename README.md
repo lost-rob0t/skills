@@ -69,6 +69,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `starintel-local-search` - starintel, local-search, jsonl, ndjson, relations, corpus.
 - `starintel-osint` - starintel, osint, research, evidence, provenance, corroboration, sources.
 - `starintel-repo-bootstrap` - github, repositories, adard, issues, bootstrap, provenance.
+- `starintel-spec-version` - starintel, schema, versioning, release, lock, conformance.
 - `starintel-wearos-release` - starintel, wearos, android, release, apk, github, nix, tagging.
 - `status-update` - notify-send, dunst, libnotify, desktop-notifications, status, task-completion.
 - `sudo` - sudo, privilege-escalation, desktop-portals, xdg-desktop-portal, polkit, authentication.
@@ -98,7 +99,7 @@ Raw backups and redaction maps do not belong in this repository, issues, PRs, or
 
 The flake exports the canonical catalog as `lib.skills` and `lib.skillNames`. Existing consumers may continue using the compatibility aliases `lib.opencodeSkills` and `lib.opencodeSkillNames`. The worker helper is installable as `packages.<system>.opencode-worker` or the default package.
 
-Skill support scripts are executable helpers invoked from their skill directory: `skills/opencode-worker/scripts/opencode-worker` (Unix-filter worker contract), `skills/opencode-worker/scripts/resolve-model` (logical model resolution against the live catalog), `skills/merge-on-green/scripts/merge-on-green` (exact-head GitHub/Forgejo merge gating), `skills/git/scripts/sync-remotes` (canonical/mirror branch drift reporting), and `skills/skill-scope/scripts/skill-scope` (project-local versus global skill inventory).
+Skill support scripts are executable helpers invoked from their skill directory: `skills/opencode-worker/scripts/opencode-worker` (Unix-filter worker contract), `skills/opencode-worker/scripts/resolve-model` (logical model resolution against the live catalog), `skills/merge-on-green/scripts/merge-on-green` (exact-head GitHub/Forgejo merge gating), `skills/git/scripts/sync-remotes` (canonical/mirror branch drift reporting), `skills/skill-scope/scripts/skill-scope` (project-local versus global skill inventory), and `skills/starintel-spec-version/scripts/starintel_spec_version.py` (read-only StarIntel schema-lock resolution).
 
 Per-client outputs cover OpenCode, Claude Code, generic Agent Skills, Codex, Cursor, GitHub Copilot, and Agent Zero. Fixed user-global clients have Home Manager modules under `homeManagerModules`; Agent Zero uses `lib.mkAgentZeroHomeManagerModule` because its `usr/skills` path is relative to the installation root.
 
