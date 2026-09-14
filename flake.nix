@@ -52,6 +52,7 @@
         starintel-local-search = ./skills/starintel-local-search;
         starintel-osint = ./skills/starintel-osint;
         starintel-repo-bootstrap = ./skills/starintel-repo-bootstrap;
+        starintel-spec-version = ./skills/starintel-spec-version;
         starintel-wearos-release = ./skills/starintel-wearos-release;
         status-update = ./skills/status-update;
         sudo = ./skills/sudo;
