@@ -33,7 +33,7 @@ jobs:
       - name: Test Task Steward bootstrap adapter
         run: python3 -m unittest tests/test_task_steward_bootstrap.py -v
       - name: Test skill support scripts and workflow discovery
-        run: python3 -m unittest tests/test_support_scripts.py tests/test_system_resource_skills.py tests/test_discover_workflows.py tests/test_git_worktrees.py tests/test_grill_skill.py tests/test_merge_on_green.py tests/test_opencode_worker.py tests/test_prolog_verification.py tests/test_skill_scope.py tests/test_status_update.py tests/test_sync_remotes.py tests/test_youtube_context.py -v
+        run: python3 -m unittest tests/test_support_scripts.py tests/test_system_resource_skills.py tests/test_discover_workflows.py tests/test_git_worktrees.py tests/test_grill_skill.py tests/test_merge_on_green.py tests/test_llm_worker_skills.py tests/test_opencode_worker.py tests/test_prolog_verification.py tests/test_skill_scope.py tests/test_status_update.py tests/test_sync_remotes.py tests/test_youtube_context.py -v
       - name: Validate flake metadata
         run: nix flake metadata
       - name: Verify exported canonical skill names
