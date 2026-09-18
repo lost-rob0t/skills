@@ -32,20 +32,31 @@ builder="ssh-ng://${project}@${host} x86_64-linux - 8 2"
 case "$mode" in
   build)
     (($#)) || set -- .
-    mapfile -t outputs < <(
-      nix build         --builders "$builder"         --max-jobs 0         --builders-use-substitutes         --no-link         --print-out-paths         "$@"
-    )
-    (("${#outputs[@]}" > 0)) || {
+    output="$(
+      nix build \
+        --builders "$builder" \
+        --max-jobs 0 \
+        --builders-use-substitutes \
+        --no-link \
+        --print-out-paths \
+        "$@"
+    )"
+    [[ -n "$output" ]] || {
       echo "nix-remote-build: build returned no output paths" >&2
       exit 70
     }
-    for path in "${outputs[@]}"; do
+    while IFS= read -r path; do
+      [[ -n "$path" ]] || continue
       nix path-info "$path" >/dev/null
       printf '%s\n' "$path"
-    done
+    done <<<"$output"
     ;;
   check)
-    nix flake check       --builders "$builder"       --max-jobs 0       --builders-use-substitutes       "$@"
+    nix flake check \
+      --builders "$builder" \
+      --max-jobs 0 \
+      --builders-use-substitutes \
+      "$@"
     ;;
   *)
     echo "nix-remote-build: expected build or check" >&2
