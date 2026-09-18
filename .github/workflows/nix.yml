@@ -74,6 +74,7 @@ jobs:
           test -f skills/merge-on-green/SKILL.md
           test -f skills/opencode-orchestrate/SKILL.md
           test -f skills/opencode-worker/SKILL.md
+          test -f skills/org-todo-sync-manager/SKILL.md
           test -f skills/ponytail/SKILL.md
           test -f skills/ponytail-audit/SKILL.md
           test -f skills/ponytail-debt/SKILL.md
