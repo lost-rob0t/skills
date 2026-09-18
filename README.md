@@ -46,7 +46,9 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `git-worktrees` - git, worktrees, parallel-work, branch-isolation, pr-review, cleanup.
 - `impeccable` - design, frontend, ui, ux, audit, polish, accessibility, impeccable. External integration of `pbakaus/impeccable` (Apache-2.0).
 - `grill` - evidence-based aggressive cross-examination of plans and implementations.
+- `llm-worker` - remote-shell, opencode, ssh, project-isolation.
 - `merge-on-green` - exact-head GitHub and Forgejo merge gating.
+- `nix-remote-build` - nix, remote-build, ssh-ng, flakes, copy-back.
 - `opencode-orchestrate` - continuation, status, handoff, and autonomous execution.
 - `opencode-worker` - opencode, worker, models, retries, isolation, automation.
 - `prolog-project-kb` - prolog, memory, todo, debugging, tools, knowledge.
@@ -99,7 +101,7 @@ Raw backups and redaction maps do not belong in this repository, issues, PRs, or
 
 The flake exports the canonical catalog as `lib.skills` and `lib.skillNames`. Existing consumers may continue using the compatibility aliases `lib.opencodeSkills` and `lib.opencodeSkillNames`. The worker helper is installable as `packages.<system>.opencode-worker` or the default package.
 
-Skill support scripts are executable helpers invoked from their skill directory: `skills/opencode-worker/scripts/opencode-worker` (Unix-filter worker contract), `skills/opencode-worker/scripts/resolve-model` (logical model resolution against the live catalog), `skills/merge-on-green/scripts/merge-on-green` (exact-head GitHub/Forgejo merge gating), `skills/git/scripts/sync-remotes` (canonical/mirror branch drift reporting), `skills/skill-scope/scripts/skill-scope` (project-local versus global skill inventory), and `skills/starintel-spec-version/scripts/starintel_spec_version.py` (read-only StarIntel schema-lock resolution).
+Skill support scripts are executable helpers invoked from their skill directory: `skills/llm-worker/scripts/llm-worker-exec` (remote project shell), `skills/nix-remote-build/scripts/nix-remote-build` (remote-only Nix builds with local realization), `skills/opencode-worker/scripts/opencode-worker` (Unix-filter worker contract), `skills/opencode-worker/scripts/resolve-model` (logical model resolution against the live catalog), `skills/merge-on-green/scripts/merge-on-green` (exact-head GitHub/Forgejo merge gating), `skills/git/scripts/sync-remotes` (canonical/mirror branch drift reporting), `skills/skill-scope/scripts/skill-scope` (project-local versus global skill inventory), and `skills/starintel-spec-version/scripts/starintel_spec_version.py` (read-only StarIntel schema-lock resolution).
 
 Per-client outputs cover OpenCode, Claude Code, generic Agent Skills, Codex, Cursor, GitHub Copilot, and Agent Zero. Fixed user-global clients have Home Manager modules under `homeManagerModules`; Agent Zero uses `lib.mkAgentZeroHomeManagerModule` because its `usr/skills` path is relative to the installation root.
 

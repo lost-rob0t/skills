@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+skill_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+config_root="${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}"
+tool_dir="$config_root/tools"
+tool_path="$tool_dir/bash.ts"
+force=0
+
+if [[ "${1:-}" == "--force" ]]; then
+  force=1
+  shift
+fi
+(($# == 0)) || {
+  echo "usage: install-opencode-bash-tool [--force]" >&2
+  exit 64
+}
+
+mkdir -p "$tool_dir"
+if [[ -e "$tool_path" && "$force" -ne 1 ]]; then
+  echo "install-opencode-bash-tool: $tool_path already exists; pass --force to replace it" >&2
+  exit 73
+fi
+
+python3 - "$skill_dir/scripts/llm-worker-exec" "$tool_path" <<'PY'
+from pathlib import Path
+import json
+import sys
+
+helper, destination = sys.argv[1:]
+helper_json = json.dumps(helper)
+content = f'''import {{ tool }} from "@opencode-ai/plugin"
+import {{ spawn }} from "node:child_process"
+
+const helper = {helper_json}
+
+export default tool({{
+  description: "Run shell commands on the configured remote LLM worker.",
+  args: {{
+    command: tool.schema.string(),
+  }},
+  async execute(args) {{
+    return await new Promise((resolve, reject) => {{
+      const child = spawn(helper, ["--", args.command], {{
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"],
+      }})
+
+      let stdout = ""
+      let stderr = ""
+      child.stdout.on("data", chunk => stdout += chunk.toString())
+      child.stderr.on("data", chunk => stderr += chunk.toString())
+      child.on("error", reject)
+      child.on("close", code => {{
+        const output = stdout + (stderr ? `\n[stderr]\n${{stderr}}` : "")
+        if (code === 0) resolve(output.trimEnd())
+        else reject(new Error(`remote bash exited ${{code}}\n${{output}}`))
+      }})
+    }})
+  }},
+}})
+'''
+Path(destination).write_text(content)
+PY
+
+printf '%s\n' "$tool_path"

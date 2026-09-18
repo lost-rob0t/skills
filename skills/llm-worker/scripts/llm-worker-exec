@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -u
+
+usage() {
+  cat <<'EOF'
+usage: llm-worker-exec [--host HOST] [--project PROJECT] [--dir DIR] -- COMMAND
+EOF
+}
+
+host="${LLM_WORKER_HOST:-}"
+project="${LLM_WORKER_PROJECT:-}"
+remote_dir="${LLM_WORKER_REMOTE_DIR:-repo}"
+
+while (($#)); do
+  case "$1" in
+    --host) host="${2:?missing host}"; shift 2 ;;
+    --project) project="${2:?missing project}"; shift 2 ;;
+    --dir) remote_dir="${2:?missing dir}"; shift 2 ;;
+    --) shift; break ;;
+    -h|--help) usage; exit 0 ;;
+    *) break ;;
+  esac
+done
+
+[[ -n "$host" ]] || { echo "llm-worker-exec: LLM_WORKER_HOST is required" >&2; exit 64; }
+[[ -n "$project" ]] || { echo "llm-worker-exec: LLM_WORKER_PROJECT is required" >&2; exit 64; }
+(($#)) || { echo "llm-worker-exec: command is required" >&2; exit 64; }
+
+command="$*"
+target="${project}@${host}"
+
+{
+  if [[ "$remote_dir" = /* ]]; then
+    printf 'cd -- %q\n' "$remote_dir"
+  else
+    printf 'cd -- "$HOME"/%q\n' "$remote_dir"
+  fi
+  printf '%s\n' "$command"
+} | ssh -T "$target" bash -s

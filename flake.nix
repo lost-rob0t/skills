@@ -22,7 +22,9 @@
         git-worktrees = ./skills/git-worktrees;
         impeccable = ./skills/impeccable;
         grill = ./skills/grill;
+        llm-worker = ./skills/llm-worker;
         merge-on-green = ./skills/merge-on-green;
+        nix-remote-build = ./skills/nix-remote-build;
         opencode-orchestrate = ./skills/opencode-orchestrate;
         opencode-worker = ./skills/opencode-worker;
         ponytail = ./skills/ponytail;
