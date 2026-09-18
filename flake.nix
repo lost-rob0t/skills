@@ -22,6 +22,7 @@
         git-worktrees = ./skills/git-worktrees;
         impeccable = ./skills/impeccable;
         grill = ./skills/grill;
+        literate-engineering = ./skills/literate-engineering;
         llm-worker = ./skills/llm-worker;
         merge-on-green = ./skills/merge-on-green;
         nix-remote-build = ./skills/nix-remote-build;
