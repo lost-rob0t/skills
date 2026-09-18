@@ -49,6 +49,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `merge-on-green` - exact-head GitHub and Forgejo merge gating.
 - `opencode-orchestrate` - continuation, status, handoff, and autonomous execution.
 - `opencode-worker` - opencode, worker, models, retries, isolation, automation.
+- `org-todo-sync-manager` - org, todo, ideas, rescheduling, github, issues.
 - `prolog-project-kb` - prolog, memory, todo, debugging, tools, knowledge.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `prolog-verification` - prolog, verification, evidence, invariants, worktrees, brave, hooks.
