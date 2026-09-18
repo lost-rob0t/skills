@@ -9,7 +9,7 @@ EOF
 
 host="${LLM_WORKER_HOST:-}"
 project="${LLM_WORKER_PROJECT:-}"
-remote_dir="${LLM_WORKER_REMOTE_DIR:-\$HOME/repo}"
+remote_dir="${LLM_WORKER_REMOTE_DIR:-repo}"
 
 while (($#)); do
   case "$1" in
@@ -30,6 +30,10 @@ command="$*"
 target="${project}@${host}"
 
 {
-  printf 'cd %q\n' "$remote_dir"
+  if [[ "$remote_dir" = /* ]]; then
+    printf 'cd -- %q\n' "$remote_dir"
+  else
+    printf 'cd -- "$HOME"/%q\n' "$remote_dir"
+  fi
   printf '%s\n' "$command"
-} | exec ssh -T "$target" bash -se
+} | ssh -T "$target" bash -s
