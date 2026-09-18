@@ -25,6 +25,7 @@
         merge-on-green = ./skills/merge-on-green;
         opencode-orchestrate = ./skills/opencode-orchestrate;
         opencode-worker = ./skills/opencode-worker;
+        org-todo-sync-manager = ./skills/org-todo-sync-manager;
         ponytail = ./skills/ponytail;
         ponytail-audit = ./skills/ponytail-audit;
         ponytail-debt = ./skills/ponytail-debt;
