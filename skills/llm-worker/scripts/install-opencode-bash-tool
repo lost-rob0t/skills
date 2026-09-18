@@ -5,8 +5,22 @@ skill_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 config_root="${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}"
 tool_dir="$config_root/tools"
 tool_path="$tool_dir/bash.ts"
+force=0
+
+if [[ "${1:-}" == "--force" ]]; then
+  force=1
+  shift
+fi
+(($# == 0)) || {
+  echo "usage: install-opencode-bash-tool [--force]" >&2
+  exit 64
+}
 
 mkdir -p "$tool_dir"
+if [[ -e "$tool_path" && "$force" -ne 1 ]]; then
+  echo "install-opencode-bash-tool: $tool_path already exists; pass --force to replace it" >&2
+  exit 73
+fi
 
 python3 - "$skill_dir/scripts/llm-worker-exec" "$tool_path" <<'PY'
 from pathlib import Path
