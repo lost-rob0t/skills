@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+usage:
+  nix-remote-build [--host HOST] [--project PROJECT] build INSTALLABLE...
+  nix-remote-build [--host HOST] [--project PROJECT] check [FLAKE-CHECK-ARGS...]
+EOF
+}
+
+host="${LLM_WORKER_HOST:-}"
+project="${LLM_WORKER_PROJECT:-}"
+
+while (($#)); do
+  case "$1" in
+    --host) host="${2:?missing host}"; shift 2 ;;
+    --project) project="${2:?missing project}"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) break ;;
+  esac
+done
+
+[[ -n "$host" ]] || { echo "nix-remote-build: LLM_WORKER_HOST is required" >&2; exit 64; }
+[[ -n "$project" ]] || { echo "nix-remote-build: LLM_WORKER_PROJECT is required" >&2; exit 64; }
+(($#)) || { usage >&2; exit 64; }
+
+mode="$1"
+shift
+builder="ssh-ng://${project}@${host} x86_64-linux - 8 2"
+
+case "$mode" in
+  build)
+    (($#)) || set -- .
+    mapfile -t outputs < <(
+      nix build         --builders "$builder"         --max-jobs 0         --builders-use-substitutes         --no-link         --print-out-paths         "$@"
+    )
+    (("${#outputs[@]}" > 0)) || {
+      echo "nix-remote-build: build returned no output paths" >&2
+      exit 70
+    }
+    for path in "${outputs[@]}"; do
+      nix path-info "$path" >/dev/null
+      printf '%s\n' "$path"
+    done
+    ;;
+  check)
+    nix flake check       --builders "$builder"       --max-jobs 0       --builders-use-substitutes       "$@"
+    ;;
+  *)
+    echo "nix-remote-build: expected build or check" >&2
+    usage >&2
+    exit 64
+    ;;
+esac
