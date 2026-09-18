@@ -1,7 +1,7 @@
 ---
 name: llm-worker
 description: remote-shell, opencode, ssh, project-isolation
-compatibility: Unix, OpenSSH, OpenCode
+compatibility: Unix, OpenSSH, OpenCode, Python 3 for tool installation
 ---
 
 # LLM Worker
