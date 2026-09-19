@@ -80,6 +80,14 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `youtube-context` - youtube, transcripts, yt-dlp, whisper, video-context.
 - `worker-orchestration` - bounded model routing, delegation, fleets, and review workers.
 - `zara-mcp` - zara, mcp, stdio, http, tools, resources, prompts, debugging.
+- `zeromq-design` - zeromq, architecture, moped, topology, contracts, simplicity.
+- `zeromq-guide` - zeromq, zguide, patterns, architecture, routing, reliability.
+- `zeromq-operations` - zeromq, debugging, backpressure, threading, monitoring, shutdown.
+- `zeromq-protocol` - zeromq, protocols, framing, state-machines, flow-control, serialization.
+- `zeromq-pubsub` - zeromq, pubsub, xpub, state-replication, slow-subscriber, lvc.
+- `zeromq-reliability` - zeromq, reliability, retries, heartbeats, idempotency, recovery.
+- `zeromq-routing` - zeromq, router, dealer, envelopes, brokers, peer-routing.
+- `zeromq-security` - zeromq, security, curve, zap, authentication, encryption.
 
 ## Portable dependencies
 

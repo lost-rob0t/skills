@@ -63,6 +63,14 @@
         youtube-context = ./skills/youtube-context;
         worker-orchestration = ./skills/worker-orchestration;
         zara-mcp = ./skills/zara-mcp;
+        zeromq-design = ./skills/zeromq-design;
+        zeromq-guide = ./skills/zeromq-guide;
+        zeromq-operations = ./skills/zeromq-operations;
+        zeromq-protocol = ./skills/zeromq-protocol;
+        zeromq-pubsub = ./skills/zeromq-pubsub;
+        zeromq-reliability = ./skills/zeromq-reliability;
+        zeromq-routing = ./skills/zeromq-routing;
+        zeromq-security = ./skills/zeromq-security;
       };
 
       # Agent Zero is GitHub-only. Keep the explicit Forgejo skills in the
