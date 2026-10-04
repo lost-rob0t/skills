@@ -12,6 +12,7 @@
         activitywatch-productivity = ./skills/activitywatch-productivity;
         activitywatch-visualize = ./skills/activitywatch-visualize;
         android-adb-deploy = ./skills/android-adb-deploy;
+        attach-live-lisp-debugger = ./skills/attach-live-lisp-debugger;
         debug-system = ./skills/debug-system;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;

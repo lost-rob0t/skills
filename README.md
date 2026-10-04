@@ -36,6 +36,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `activitywatch-productivity` - activitywatch, productivity, friction, routines, recommendations.
 - `activitywatch-visualize` - activitywatch, visualization, timelines, heatmaps, privacy.
 - `android-adb-deploy` - android, adb, wireless-debugging, apk, build, deploy, wearos.
+- `attach-live-lisp-debugger` - common-lisp, sbcl, slynk, swank, debugger, backtrace.
 - `debug-system` - debug, cpu, io, memory, pressure, diagnostics, performance.
 - `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
