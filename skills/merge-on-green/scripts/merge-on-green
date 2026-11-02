@@ -180,7 +180,7 @@ class ForgejoProvider:
                 "warning": "pending",
                 "failure": "failure",
                 "error": "failure",
-            }.get(status.get("status", "pending"), "pending")
+            }.get(status.get("state") or status.get("status") or "pending", "pending")
         reviews = self._request("GET", f"pulls/{number}/reviews")
         approved = any(review.get("state", "").lower() == "approved" for review in reviews)
         mergeable = bool(pull.get("mergeable", False))
