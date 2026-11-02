@@ -131,7 +131,7 @@ class ForgejoProvider:
     def __init__(self, repo: str | None, host: str | None, timeout: float) -> None:
         url = git("remote", "get-url", "origin")
         self.slug = repo or self._slug_from_remote(url)
-        match = re.search(r"(?:https?://|git@)([^/:]+)", url)
+        match = re.search(r"(?:ssh://[^@/]+@|https?://|git@)([^/:]+)", url)
         self.host = host or (match.group(1) if match else None)
         self.timeout = timeout
         self.token = os.environ.get("FORGEJO_TOKEN", "")
