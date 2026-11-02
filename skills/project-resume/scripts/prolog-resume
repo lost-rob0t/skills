@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# prolog-resume — enforced resume view over a repository's .prolog/ state.
+#
+# Exit codes:
+#   0  state printed (LAST handoff + todos + recent work + kb summary)
+#   2  no .prolog/ in the repository
+#   3  .prolog/ exists but no handoff.pl with handoff/2 facts
+#
+# Prints a staleness warning (exit stays 0) when a run journal is newer
+# than the handoff: newer todos/observations outrank the handoff's
+# next_action until a fresh handoff is written.
+set -euo pipefail
+
+root="${1:-$PWD}"
+if ! root="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$root")"; then
+  root="${1:-$PWD}"
+fi
+p="$root/.prolog"
+
+if [ ! -d "$p" ]; then
+  echo "resume: no .prolog/ under $root" >&2
+  echo "resume: initialize per the prolog-project-kb skill (prolog-verify init) first" >&2
+  exit 2
+fi
+
+handoff_file="$p/handoff.pl"
+runs_dir="$p/runs"
+kb_dir="$p/kb"
+
+# Staleness: any run journal newer than the handoff?
+stale_note=""
+if [ -f "$handoff_file" ] && [ -d "$runs_dir" ]; then
+  newest_run=$(find "$runs_dir" -name '*.pl' -newer "$handoff_file" -print -quit 2>/dev/null || true)
+  if [ -n "$newest_run" ]; then
+    stale_note="WARNING: run journal newer than handoff ($(basename "$newest_run")) — todos/observations below outrank next_action until a fresh handoff is written"
+  fi
+fi
+
+run_files=""
+if [ -d "$runs_dir" ]; then
+  run_files=$(find "$runs_dir" -name '*.pl' -type f | sort | tr '\n' ' ')
+fi
+
+prog=$(mktemp /tmp/prolog-resume.XXXXXX.pl)
+trap 'rm -f "$prog"' EXIT
+cat >"$prog" <<'PROLOG'
+:- dynamic handoff/2.
+:- dynamic todo/3.
+:- dynamic obs/2.
+
+safe_consult(File) :-
+    catch((consult(File), !), _, true).
+
+main :-
+    current_prolog_flag(argv, Argv),
+    (   append(_, ['--'|Files], Argv) -> true
+    ;   Files = Argv
+    ),
+    (   Files = [Handoff|Runs] -> true
+    ;   Handoff = '', Runs = []
+    ),
+    (   Handoff \== '' -> safe_consult(Handoff)
+    ;   true
+    ),
+    maplist(safe_consult, Runs),
+    print_handoff,
+    (   stale_warning
+    ;   true
+    ),
+    print_todos,
+    print_recent,
+    halt.
+
+print_handoff :-
+    findall(K-V, handoff(K, V), Pairs),
+    (   Pairs == [] ->
+        format("resume: no handoff/2 facts — write .prolog/handoff.pl per the prolog-project-kb skill~n"),
+        halt(3)
+    ;   format("== LAST HANDOFF ==~n"),
+        pairs_sort(Pairs, Sorted),
+        forall(member(K-V, Sorted),
+               format("~w: ~w~n", [K, V]))
+    ).
+
+pairs_sort(Pairs, Sorted) :-
+    order_keys([goal, state, written, next_action, blockers, coordinates], Pairs, Ordered),
+    findall(K-V, (member(K-V, Pairs), \+ member(K, [goal, state, written, next_action, blockers, coordinates])), Rest),
+    append(Ordered, Rest, Sorted).
+
+order_keys([], _, []).
+order_keys([K|Ks], Pairs, [K-V|Out]) :-
+    (   member(K-V, Pairs) -> true
+    ;   V = '(missing)'
+    ),
+    order_keys(Ks, Pairs, Out).
+
+stale_warning :-
+    (   getenv('RESUME_STALE_NOTE', Msg) -> format("~n~w~n", [Msg])
+    ;   true
+    ).
+
+print_todos :-
+    format("~n== ACTIVE TODOS ==~n"),
+    findall(S-I-D, (todo(S, I, D), member(S, [active, next])), Todos),
+    (   Todos == [] -> format("(none)~n")
+    ;   forall(member(S-I-D, Todos), format("[~w] ~w: ~w~n", [S, I, D]))
+    ).
+
+print_recent :-
+    format("~n== RECENT WORK (newest observations) ==~n"),
+    findall(I-D, obs(I, D), All),
+    reverse(All, Newest),
+    (   Newest == [] -> format("(none)~n")
+    ;   first_n(Newest, 12, Show),
+        forall(member(I-D, Show), format("* ~w: ~w~n", [I, D]))
+    ).
+
+first_n([], _, []).
+first_n(_, 0, []) :- !.
+first_n([X|Xs], N, [X|Out]) :- N1 is N - 1, first_n(Xs, N1, Out).
+PROLOG
+
+# stale note plumbing: read by the prolog program via getenv/2
+if [ -n "$stale_note" ]; then
+  export RESUME_STALE_NOTE="$stale_note"
+fi
+
+# shellcheck disable=SC2086
+swipl -q -g main -t halt "$prog" -- "$handoff_file" $run_files </dev/null
+
+echo
+echo "== KNOWLEDGE (.prolog/kb) =="
+if [ -d "$kb_dir" ]; then
+  for f in "$kb_dir"/*.pl; do
+    [ -e "$f" ] || continue
+    facts=$(grep -cE '^[a-z][A-Za-z0-9_]*\(' "$f" || true)
+    printf '%s: %s facts\n' "$(basename "$f")" "$facts"
+  done
+else
+  echo "(no kb dir)"
+fi

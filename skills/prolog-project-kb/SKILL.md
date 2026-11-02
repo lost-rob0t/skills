@@ -18,6 +18,28 @@ The durable KB must be composed from many focused Prolog files. Do not impose a 
 
 Run files are append/update execution journals, not durable project knowledge. Keep `.prolog/runs/` untracked with a local ignore mechanism when possible so TODO updates and observations do not dirty the repository.
 
+## Handoffs
+
+The LAST handoff lives in `.prolog/handoff.pl` as flat facts, one file per
+repository, last-write-wins, committed like KB files (survives worktree
+and session changes):
+
+```prolog
+handoff(goal, 'what this lane/repo is driving toward').
+handoff(state, 'verified current state, facts not inference').
+handoff(written, 'ISO-8601 timestamp').
+handoff(next_action, 'the exact next step').
+handoff(blockers, 'what blocks and what unblocks it').
+handoff(coordinates, 'repos/hosts/branches/urls that matter').
+```
+
+Writing a handoff OVERWRITES the previous one — that is the point: the
+resume view shows only the last handoff. Org/Markdown handoff files are
+superseded for repositories using `.prolog/`; do not create new ones.
+The `project-resume` skill and its `prolog-resume` script consume this
+file (exit 3 when absent) together with run-journal TODOs, newest
+observations, and the KB summary.
+
 ## Workflow
 
 1. Before substantive work, consult the durable KB and the active task/run journal if present.
