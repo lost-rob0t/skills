@@ -39,6 +39,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `debug-system` - debug, cpu, io, memory, pressure, diagnostics, performance.
 - `discover-workflows` - discover repeated Bash, Emacs, and ActivityWatch workflows for dotfiles suggestions.
 - `dotfiles-workflow` - dotfiles, declarative-config, nix, home-manager, mcp.
+- `forgejo-copilot` - forgejo, copilot, bot, enable, daemon, service.
 - `forgejo-repo-bootstrap` - forgejo, repositories, adard, issues, bootstrap, provenance.
 - `forgejo-skill-edit` - skills, forgejo, editing, validation, gitflow, pull-request, CI.
 - `free-resources` - memory, cpu, resources, kill, consent, cleanup.

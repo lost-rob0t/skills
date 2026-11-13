@@ -15,6 +15,7 @@
         debug-system = ./skills/debug-system;
         discover-workflows = ./skills/discover-workflows;
         dotfiles-workflow = ./skills/dotfiles-workflow;
+        forgejo-copilot = ./skills/forgejo-copilot;
         forgejo-repo-bootstrap = ./skills/forgejo-repo-bootstrap;
         forgejo-skill-edit = ./skills/forgejo-skill-edit;
         free-resources = ./skills/free-resources;
@@ -77,6 +78,7 @@
       # portable catalog for other consumers, but never expose them through the
       # Agent Zero adapter or Home Manager module.
       agentZeroSkills = builtins.removeAttrs skills [
+        "forgejo-copilot"
         "forgejo-repo-bootstrap"
         "forgejo-skill-edit"
       ];
