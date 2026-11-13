@@ -26,11 +26,20 @@ VERIFY_TEMPLATE = r"""% Task-specific verification for the current worktree.
 :- use_module(library(lists)).
 :- dynamic machine_observation/8, machine_brave_search/7, requirement/2, claim/2.
 :- discontiguous machine_observation/8, machine_brave_search/7, requirement/2, claim/2.
-:- ensure_loaded('facts.kb').
+
+% Resolve verifier state relative to this file, never the process CWD:
+% a gate run from outside .prolog must still load facts.kb and the journal.
+:- prolog_load_context(file, Here),
+   file_directory_name(Here, PrologDir),
+   asserta(user:prolog_dir(PrologDir)),
+   directory_file_path(PrologDir, 'facts.kb', FactsFile),
+   ensure_loaded(FactsFile).
 
 load_current_run :-
     verification_context(_, Run),
-    atomic_list_concat(['runs/', Run, '/evidence.pl'], RunFile),
+    user:prolog_dir(PrologDir),
+    atomic_list_concat(['runs/', Run, '/evidence.pl'], RunRelative),
+    directory_file_path(PrologDir, RunRelative, RunFile),
     ( exists_file(RunFile) -> ensure_loaded(RunFile) ; true ).
 
 :- load_current_run.

@@ -258,6 +258,47 @@ class PrologVerificationTest(unittest.TestCase):
         changed = self.run_script("hook-stop", input_payload=hook)
         self.assertEqual(json.loads(changed.stdout)["decision"], "block")
 
+    @unittest.skipUnless(shutil.which("swipl"), "real SWI-Prolog required")
+    def test_template_loads_state_from_foreign_cwd(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("prolog_verify_module", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        prolog_dir = self.root / ".prolog"
+        run = "a" * 32
+        prolog_dir.mkdir(parents=True, exist_ok=True)
+        (prolog_dir / "facts.kb").write_text(
+            "task('cwdtest').\n"
+            f"verification_context('cwdtest', '{run}').\n"
+            "repo_state('nohead', 'nodigest').\n"
+            "research_required(false).\n",
+            encoding="utf-8",
+        )
+        (prolog_dir / "verify.pl").write_text(module.VERIFY_TEMPLATE, encoding="utf-8")
+        run_dir = prolog_dir / "runs" / run
+        run_dir.mkdir(parents=True)
+        (run_dir / "evidence.pl").write_text(
+            f"machine_observation('cwdtest', '{run}', 'obs-1', command(['true']), exit(0), "
+            "'out', 'nohead', 'nodigest').\n",
+            encoding="utf-8",
+        )
+        # Completion requires facts.kb and the run journal, so exiting 0 from a
+        # foreign CWD proves the template resolves state next to verify.pl.
+        with tempfile.TemporaryDirectory() as foreign:
+            completed = subprocess.run(
+                [shutil.which("swipl"), "-q", "-f", "none", "-s", str(prolog_dir / "verify.pl")],
+                cwd=foreign,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertNotIn("existence_error", completed.stderr)
+        self.assertNotIn("Unknown procedure", completed.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
