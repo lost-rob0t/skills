@@ -31,6 +31,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 
 ## Skills
 
+- `a0-live-debug` - a0, agent-zero, docker, live-debug, scheduler, tasks, csrf, chats.
 - `activitywatch-analyze` - activitywatch, analysis, time-use, workflow-patterns, privacy.
 - `activitywatch-group` - activitywatch, window-groups, qtile, clustering, routing.
 - `activitywatch-productivity` - activitywatch, productivity, friction, routines, recommendations.
@@ -49,6 +50,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `llm-worker` - remote-shell, opencode, ssh, project-isolation.
 - `merge-on-green` - exact-head GitHub and Forgejo merge gating.
 - `nix-remote-build` - nix, remote-build, ssh-ng, flakes, copy-back.
+- `node-red-starintel` - node-red, starintel, prolog-rlm, hackmode, palettes, flows, examples, deploy.
 - `opencode-orchestrate` - continuation, status, handoff, and autonomous execution.
 - `opencode-worker` - opencode, worker, models, retries, isolation, automation.
 - `prolog-project-kb` - prolog, memory, todo, debugging, tools, knowledge.
@@ -80,6 +82,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `youtube-context` - youtube, transcripts, yt-dlp, whisper, video-context.
 - `worker-orchestration` - bounded model routing, delegation, fleets, and review workers.
 - `zara-mcp` - zara, mcp, stdio, http, tools, resources, prompts, debugging.
+- `zara-phone-pair` - zara, phone, pairing, adb, wireless-debugging, curve, enrollment, android.
 - `zeromq-design` - zeromq, architecture, moped, topology, contracts, simplicity.
 - `zeromq-guide` - zeromq, zguide, patterns, architecture, routing, reliability.
 - `zeromq-operations` - zeromq, debugging, backpressure, threading, monitoring, shutdown.

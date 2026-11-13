@@ -27,6 +27,20 @@ Use the installed `prolog-verify` command when available. Otherwise run this ski
 4. When external discovery is required, run `prolog-verify brave --query <query>` so the fixed Brave CLI call and its result are recorded in the same run file. Use `record-brave` only when a compatible Brave tool already wrote its successful result to a file. Do not mark local-only work as research.
 5. Run `prolog-verify check --task <short-task-id>` (and `--run <RunId>` when automating). Treat a missing, stale, timed-out, exceptional, or non-zero result as failure.
 
+## Isolated verifier for huge non-git roots
+
+`init`, `observe`, and `check` digest the whole work tree. In a git worktree that is cheap. Outside Git the walk skips vendored directories and stops at a 256 MiB cap on hashed bytes, failing closed instead of emitting a digest it cannot bound. For a large non-git root, run the verifier against a small dedicated work dir (for example `/tmp/opencode/<task>/`) and record that evidence path in the owning journal.
+
+## Journal floors
+
+After appending to a shared or hand-edited journal, gate it with this skill's `scripts/check-journal.pl`:
+
+```sh
+swipl scripts/check-journal.pl -- /abs/path/to/journal.pl [floors.pl]
+```
+
+Floors come from `.prolog/checks/floors.pl` when the journal lives under `.prolog/runs/<Run>/`, else `<journal-dir>/floors.pl`, else an explicit argument or `CHECK_JOURNAL_FLOORS`. Declare `min_clauses(<name>/<arity>, <min>).` and `required_entry(<template>).`. SWI-Prolog recovers past syntax-corrupted terms while loading, so predicate existence proves nothing; clause counts prove no region was silently skipped. Exit codes: 0 pass, 1 floor or entry failure, 2 usage or uncaught load error.
+
 ## Rules
 
 - `init --force` starts a new isolated run and archives earlier controls; it never authorizes reuse of earlier evidence. Legacy HEAD-only state needs explicit reinitialization.
@@ -38,5 +52,6 @@ Use the installed `prolog-verify` command when available. Otherwise run this ski
 - Use `library(clpfd)` for integer constraints and `table/1` for recursive relations over cyclic graphs when needed.
 - Keep verification pure. Filesystem, shell, and network effects belong in the helper, which projects their results into ground Prolog facts.
 - Do not weaken or delete an invariant merely to make the gate pass.
+- Fixed defects worth remembering: the verify template once resolved `facts.kb` and the run journal against the process CWD (the journal was silently skipped from any other directory), and the no-git digest once hashed an unbounded tree (a large workspace drove `init` past four minutes and 15 GiB RSS). State now resolves against `verify.pl` itself and the walk is skip-listed, capped, and fail-closed.
 
 For the fact schema and extension rules, read [references/schema.md](references/schema.md).

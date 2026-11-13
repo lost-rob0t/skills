@@ -5,11 +5,13 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "prolog-verification" / "scripts" / "prolog-verify.py"
+CHECK_JOURNAL = ROOT / "skills" / "prolog-verification" / "scripts" / "check-journal.pl"
 
 
 class PrologVerificationTest(unittest.TestCase):
@@ -257,6 +259,145 @@ class PrologVerificationTest(unittest.TestCase):
         (self.root / "tracked.txt").write_text("agent edit\n", encoding="utf-8")
         changed = self.run_script("hook-stop", input_payload=hook)
         self.assertEqual(json.loads(changed.stdout)["decision"], "block")
+
+    def make_nongit_root(self):
+        directory = tempfile.TemporaryDirectory(prefix="prolog-verify-nongit-")
+        self.addCleanup(directory.cleanup)
+        return Path(directory.name)
+
+    @staticmethod
+    def sparse_file(path, size):
+        with path.open("wb") as handle:
+            handle.truncate(size)
+
+    def test_nongit_init_skips_vendored_directories(self):
+        root = self.make_nongit_root()
+        for junk in ("node_modules/pkg/bundle.js", ".venv/lib/libpython.so", "__pycache__/x.pyc"):
+            path = root / junk
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self.sparse_file(path, 96 * 1024 * 1024)
+        (root / "note.txt").write_text("real content\n", encoding="utf-8")
+        started = time.monotonic()
+        result = self.run_script("--work-dir", str(root), "init", "--task", "nongit-skip", check=True)
+        self.assertLess(time.monotonic() - started, 10)
+        facts = (root / ".prolog/facts.kb").read_text(encoding="utf-8")
+        self.assertIn("repo_state('no-git',", facts)
+
+    def test_nongit_init_fails_closed_when_hash_budget_exceeded(self):
+        root = self.make_nongit_root()
+        junk = root / "node_modules/pkg/bundle.js"
+        junk.parent.mkdir(parents=True)
+        self.sparse_file(junk, 96 * 1024 * 1024)
+        self.sparse_file(root / "big-core-dump.bin", 260 * 1024 * 1024)
+        started = time.monotonic()
+        result = self.run_script("--work-dir", str(root), "init", "--task", "nongit-bound")
+        elapsed = time.monotonic() - started
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertLess(elapsed, 10)
+        self.assertIn("256 MiB digest budget", result.stderr)
+        self.assertIn("big-core-dump.bin", result.stderr)
+        self.assertIn("use a git worktree or an isolated verifier dir under e.g. /tmp/opencode/<task>/", result.stderr)
+
+    @unittest.skipUnless(shutil.which("swipl"), "real SWI-Prolog required")
+    def test_template_loads_state_from_foreign_cwd(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("prolog_verify_module", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        prolog_dir = self.root / ".prolog"
+        run = "a" * 32
+        prolog_dir.mkdir(parents=True, exist_ok=True)
+        (prolog_dir / "facts.kb").write_text(
+            "task('cwdtest').\n"
+            f"verification_context('cwdtest', '{run}').\n"
+            "repo_state('nohead', 'nodigest').\n"
+            "research_required(false).\n",
+            encoding="utf-8",
+        )
+        (prolog_dir / "verify.pl").write_text(module.VERIFY_TEMPLATE, encoding="utf-8")
+        run_dir = prolog_dir / "runs" / run
+        run_dir.mkdir(parents=True)
+        (run_dir / "evidence.pl").write_text(
+            f"machine_observation('cwdtest', '{run}', 'obs-1', command(['true']), exit(0), "
+            "'out', 'nohead', 'nodigest').\n",
+            encoding="utf-8",
+        )
+        # Completion requires facts.kb and the run journal, so exiting 0 from a
+        # foreign CWD proves the template resolves state next to verify.pl.
+        with tempfile.TemporaryDirectory() as foreign:
+            completed = subprocess.run(
+                [shutil.which("swipl"), "-q", "-f", "none", "-s", str(prolog_dir / "verify.pl")],
+                cwd=foreign,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertNotIn("existence_error", completed.stderr)
+        self.assertNotIn("Unknown procedure", completed.stderr)
+
+    @unittest.skipUnless(shutil.which("swipl"), "real SWI-Prolog required")
+    def test_check_journal_passes_clean_journal_with_floors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = "b" * 32
+            journal = root / ".prolog" / "runs" / run / "evidence.pl"
+            entries = [
+                f"machine_observation('t', '{run}', 'obs-{n}', command(['run']), exit(0), 'x', 'h', 'd')"
+                for n in range(3)
+            ]
+            journal.parent.mkdir(parents=True)
+            journal.write_text("".join(entry + ".\n" for entry in entries), encoding="utf-8")
+            floors = root / "floors.pl"
+            floors.write_text(
+                "min_clauses(machine_observation/8, 3).\n"
+                "required_entry(machine_observation(_, _, _, _, exit(0), _, _, _)).\n",
+                encoding="utf-8",
+            )
+            foreign = root / "foreign"
+            foreign.mkdir()
+            completed = subprocess.run(
+                [shutil.which("swipl"), "-q", "-f", "none", str(CHECK_JOURNAL),
+                 "--", str(journal), str(floors)],
+                cwd=foreign,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn("floors satisfied", completed.stdout)
+
+    @unittest.skipUnless(shutil.which("swipl"), "real SWI-Prolog required")
+    def test_check_journal_rejects_truncated_final_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            journal = root / "journal.pl"
+            entries = [
+                f"machine_observation('t', 'r', 'obs-{n}', command(['run']), exit(0), 'x', 'h', 'd')"
+                for n in range(4)
+            ]
+            # The final entry loses its terminating period: SWI recovers, keeps
+            # the first three clauses, and silently drops the fourth.
+            journal.write_text("".join(entry + ".\n" for entry in entries[:-1]) + entries[-1] + "\n",
+                               encoding="utf-8")
+            floors = root / "floors.pl"
+            floors.write_text("min_clauses(machine_observation/8, 4).\n", encoding="utf-8")
+            completed = subprocess.run(
+                [shutil.which("swipl"), "-q", "-f", "none", str(CHECK_JOURNAL),
+                 "--", str(journal), str(floors)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
+        self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+        self.assertIn("has 3 clauses, floor is 4", completed.stderr)
 
 
 if __name__ == "__main__":
