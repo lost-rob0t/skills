@@ -11,6 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "prolog-verification" / "scripts" / "prolog-verify.py"
+CHECK_JOURNAL = ROOT / "skills" / "prolog-verification" / "scripts" / "check-journal.pl"
 
 
 class PrologVerificationTest(unittest.TestCase):
@@ -337,6 +338,66 @@ class PrologVerificationTest(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertNotIn("existence_error", completed.stderr)
         self.assertNotIn("Unknown procedure", completed.stderr)
+
+    @unittest.skipUnless(shutil.which("swipl"), "real SWI-Prolog required")
+    def test_check_journal_passes_clean_journal_with_floors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = "b" * 32
+            journal = root / ".prolog" / "runs" / run / "evidence.pl"
+            entries = [
+                f"machine_observation('t', '{run}', 'obs-{n}', command(['run']), exit(0), 'x', 'h', 'd')"
+                for n in range(3)
+            ]
+            journal.parent.mkdir(parents=True)
+            journal.write_text("".join(entry + ".\n" for entry in entries), encoding="utf-8")
+            floors = root / "floors.pl"
+            floors.write_text(
+                "min_clauses(machine_observation/8, 3).\n"
+                "required_entry(machine_observation(_, _, _, _, exit(0), _, _, _)).\n",
+                encoding="utf-8",
+            )
+            foreign = root / "foreign"
+            foreign.mkdir()
+            completed = subprocess.run(
+                [shutil.which("swipl"), "-q", "-f", "none", str(CHECK_JOURNAL),
+                 "--", str(journal), str(floors)],
+                cwd=foreign,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn("floors satisfied", completed.stdout)
+
+    @unittest.skipUnless(shutil.which("swipl"), "real SWI-Prolog required")
+    def test_check_journal_rejects_truncated_final_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            journal = root / "journal.pl"
+            entries = [
+                f"machine_observation('t', 'r', 'obs-{n}', command(['run']), exit(0), 'x', 'h', 'd')"
+                for n in range(4)
+            ]
+            # The final entry loses its terminating period: SWI recovers, keeps
+            # the first three clauses, and silently drops the fourth.
+            journal.write_text("".join(entry + ".\n" for entry in entries[:-1]) + entries[-1] + "\n",
+                               encoding="utf-8")
+            floors = root / "floors.pl"
+            floors.write_text("min_clauses(machine_observation/8, 4).\n", encoding="utf-8")
+            completed = subprocess.run(
+                [shutil.which("swipl"), "-q", "-f", "none", str(CHECK_JOURNAL),
+                 "--", str(journal), str(floors)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
+        self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+        self.assertIn("has 3 clauses, floor is 4", completed.stderr)
 
 
 if __name__ == "__main__":
