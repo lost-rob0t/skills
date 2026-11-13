@@ -14,7 +14,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
+      # The Forgejo runner resolves github.com actions through the
+      # data.forgejo.org mirror, which does not carry cachix/install-nix-action.
+      # Install Nix in-shell when missing instead; hosts that already provide
+      # nix (e.g. a nixos-labeled host runner) skip the download.
+      - name: Install Nix when missing
+        env:
+          NIX_INSTALLER_YES: "1"
+        run: |
+          if ! command -v nix >/dev/null 2>&1; then
+            curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
+            echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+            export PATH="$HOME/.nix-profile/bin:$PATH"
+          fi
+          mkdir -p "$HOME/.config/nix"
+          printf 'experimental-features = nix-command flakes\n' >> "$HOME/.config/nix/nix.conf"
+          command -v nix
       - name: Install pinned validator runner
         run: python3 -m pip install --disable-pip-version-check 'uv==0.12.0'
       - name: Validate every canonical skill
