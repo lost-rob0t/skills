@@ -6,6 +6,7 @@
   outputs = { self, nixpkgs }:
     let
       skills = {
+        a0-live-debug = ./skills/a0-live-debug;
         adadr = ./skills/adadr;
         activitywatch-analyze = ./skills/activitywatch-analyze;
         activitywatch-group = ./skills/activitywatch-group;
@@ -25,6 +26,7 @@
         llm-worker = ./skills/llm-worker;
         merge-on-green = ./skills/merge-on-green;
         nix-remote-build = ./skills/nix-remote-build;
+        node-red-starintel = ./skills/node-red-starintel;
         opencode-orchestrate = ./skills/opencode-orchestrate;
         opencode-worker = ./skills/opencode-worker;
         ponytail = ./skills/ponytail;
@@ -63,6 +65,7 @@
         youtube-context = ./skills/youtube-context;
         worker-orchestration = ./skills/worker-orchestration;
         zara-mcp = ./skills/zara-mcp;
+        zara-phone-pair = ./skills/zara-phone-pair;
         zeromq-design = ./skills/zeromq-design;
         zeromq-guide = ./skills/zeromq-guide;
         zeromq-operations = ./skills/zeromq-operations;
