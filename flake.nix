@@ -38,6 +38,7 @@
         prolog-project-kb = ./skills/prolog-project-kb;
         prolog-reasoning = ./skills/prolog-reasoning;
         prolog-verification = ./skills/prolog-verification;
+        project-resume = ./skills/project-resume;
         qtile-confirm = ./skills/qtile-confirm;
         qtile-debug = ./skills/qtile-debug;
         qtile-edit = ./skills/qtile-edit;
