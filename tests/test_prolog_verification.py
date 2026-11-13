@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 
@@ -257,6 +258,44 @@ class PrologVerificationTest(unittest.TestCase):
         (self.root / "tracked.txt").write_text("agent edit\n", encoding="utf-8")
         changed = self.run_script("hook-stop", input_payload=hook)
         self.assertEqual(json.loads(changed.stdout)["decision"], "block")
+
+    def make_nongit_root(self):
+        directory = tempfile.TemporaryDirectory(prefix="prolog-verify-nongit-")
+        self.addCleanup(directory.cleanup)
+        return Path(directory.name)
+
+    @staticmethod
+    def sparse_file(path, size):
+        with path.open("wb") as handle:
+            handle.truncate(size)
+
+    def test_nongit_init_skips_vendored_directories(self):
+        root = self.make_nongit_root()
+        for junk in ("node_modules/pkg/bundle.js", ".venv/lib/libpython.so", "__pycache__/x.pyc"):
+            path = root / junk
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self.sparse_file(path, 96 * 1024 * 1024)
+        (root / "note.txt").write_text("real content\n", encoding="utf-8")
+        started = time.monotonic()
+        result = self.run_script("--work-dir", str(root), "init", "--task", "nongit-skip", check=True)
+        self.assertLess(time.monotonic() - started, 10)
+        facts = (root / ".prolog/facts.kb").read_text(encoding="utf-8")
+        self.assertIn("repo_state('no-git',", facts)
+
+    def test_nongit_init_fails_closed_when_hash_budget_exceeded(self):
+        root = self.make_nongit_root()
+        junk = root / "node_modules/pkg/bundle.js"
+        junk.parent.mkdir(parents=True)
+        self.sparse_file(junk, 96 * 1024 * 1024)
+        self.sparse_file(root / "big-core-dump.bin", 260 * 1024 * 1024)
+        started = time.monotonic()
+        result = self.run_script("--work-dir", str(root), "init", "--task", "nongit-bound")
+        elapsed = time.monotonic() - started
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertLess(elapsed, 10)
+        self.assertIn("256 MiB digest budget", result.stderr)
+        self.assertIn("big-core-dump.bin", result.stderr)
+        self.assertIn("use a git worktree or an isolated verifier dir under e.g. /tmp/opencode/<task>/", result.stderr)
 
     @unittest.skipUnless(shutil.which("swipl"), "real SWI-Prolog required")
     def test_template_loads_state_from_foreign_cwd(self):
