@@ -56,6 +56,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `prolog-project-kb` - prolog, memory, todo, debugging, tools, knowledge.
 - `prolog-reasoning` - prolog, symbolic-reasoning, constraints, verification, mcp.
 - `prolog-verification` - prolog, verification, evidence, invariants, worktrees, brave, hooks.
+- `project-resume` - resume, handoff, prolog, todos, project-kb, session-state.
 - `qtile-confirm` - qtile, screenshots, vision, visual-regression, bar-layout.
 - `qtile-debug` - qtile, diagnostics, logs, IPC, crash-analysis.
 - `qtile-edit` - qtile, literate-config, tangle, configuration, tests.
