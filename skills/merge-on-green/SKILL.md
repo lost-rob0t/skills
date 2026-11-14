@@ -15,8 +15,8 @@ were verified.
 
 Run `scripts/merge-on-green <pr-number>` from a checkout of the
 repository. The provider is detected from the origin remote:
-`github.com` uses the `gh` CLI, `git.starintel.actor` uses the Forgejo
-REST API with `FORGEJO_TOKEN`. Override detection with `--provider
+GitHub uses the `gh` CLI; Forgejo uses its REST API with `FORGEJO_TOKEN`.
+Override detection with `--provider
 github|forgejo` and pass `--repo owner/name` when the remote is
 ambiguous.
 
@@ -36,6 +36,7 @@ verified commit.
 
 - Never equate an old-SHA green result with current green.
 - Never duplicate a PR across providers.
+- Forgejo review policies requiring team or stale-review evaluation fail closed.
 - Exit codes: 0 merged, 2 configuration, 3 provider failure,
   4 blocked/timeout/head churn, 5 rate-limited beyond budget.
 - Use `--dry-run` to verify eligibility without merging.

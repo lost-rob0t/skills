@@ -52,18 +52,37 @@ if plan.get('fail_mode') and plan['calls'] <= fail_first:
     open(plan_path, 'w').write(json.dumps(plan))
     raise SystemExit(1)
 open(plan_path, 'w').write(json.dumps(plan))
-if '--merge' in argv:
-    plan['merged'] = True
+if 'graphql' in argv:
+    view = plan['views'].pop(0) if len(plan['views']) > 1 else plan['views'][0]
+    plan['last_view'] = view
     open(plan_path, 'w').write(json.dumps(plan))
-    raise SystemExit(0)
-view = plan['views'].pop(0) if len(plan['views']) > 1 else plan['views'][0]
-open(plan_path, 'w').write(json.dumps(plan))
-print(json.dumps({
+else:
+    view = plan.get('last_view', plan['views'][0])
+pull = {
     'headRefOid': view['head'], 'state': 'MERGED' if plan.get('merged') else view.get('state', 'OPEN'),
     'mergeable': view.get('mergeable', 'MERGEABLE'),
     'mergeStateStatus': view['merge_state'],
     'reviewDecision': view.get('review', 'APPROVED'),
-}))
+}
+if 'graphql' in argv:
+    print(json.dumps({'data': {'repository': {'pullRequest': pull}}}))
+    raise SystemExit(0)
+if any(str(a).endswith('/check-runs') for a in argv):
+    conclusion = view.get('checks',
+                          'failure' if view['merge_state'] in ('UNSTABLE', 'BLOCKED')
+                          else 'pending' if view['merge_state'] == 'PENDING'
+                          else 'success')
+    if conclusion == 'pending':
+        runs = [{'status': 'in_progress', 'conclusion': None}]
+    else:
+        runs = [{'status': 'completed', 'conclusion': conclusion}]
+    print(json.dumps({'check_runs': runs}))
+    raise SystemExit(0)
+if 'merge' in argv:
+    plan['merged'] = True
+    open(plan_path, 'w').write(json.dumps(plan))
+    raise SystemExit(0)
+print(json.dumps(pull))
 """
 
 
@@ -86,9 +105,9 @@ def forgejo_json(value) -> bytes:
     return json.dumps(value).encode()
 
 
-PULL = {"state": "open", "merged": False, "mergeable": True, "head": {"sha": "sha1"}}
-STATUS_OK = {"status": "success"}
-REVIEW_OK = [{"state": "APPROVED"}]
+PULL = {"state": "open", "merged": False, "mergeable": True, "head": {"sha": "sha1"}, "base": {"ref": "main"}}
+STATUS_OK = {"state": "success"}
+REVIEW_OK = [{"state": "APPROVED", "user": {"login": "reviewer"}}]
 
 
 class HelperTests(unittest.TestCase):
@@ -140,7 +159,7 @@ class GithubEndToEndTests(unittest.TestCase):
         self.sleeps: list[float] = []
 
     def run_main(self, *extra: str) -> tuple[int, str]:
-        argv = [mog.__name__, "7", "--gh", str(self.fake), "--repo", "foo/bar",
+        argv = [mog.__name__, "7", "--provider", "github", "--gh", str(self.fake), "--repo", "foo/bar",
                 "--poll-interval", "0.01", "--max-delay", "0.02", *extra]
         err = io.StringIO()
         with mock.patch.object(sys, "argv", argv), \
@@ -248,20 +267,24 @@ class GithubEndToEndTests(unittest.TestCase):
 class ForgejoTests(unittest.TestCase):
     def setUp(self) -> None:
         self.calls: list[tuple[str, str]] = []
+        self.bodies: list[dict] = []
 
     def provider(self) -> mog.ForgejoProvider:
         with mock.patch.dict(os.environ, {"FORGEJO_TOKEN": "tok"}), \
                 mock.patch.object(mog, "git", return_value="https://git.starintel.actor/foo/bar.git"):
             return mog.ForgejoProvider(None, None, timeout=1)
 
-    def respond(self, pull: dict, status: dict | None = None, reviews: list | None = None) -> None:
+    def respond(self, pull: dict, status: dict | None = None, reviews: list | None = None, protections: list | None = None) -> None:
         def fake_urlopen(request: urllib.request.Request, timeout: float) -> FakeResponse:
             path = request.full_url.rsplit("/api/v1/repos/foo/bar/", 1)[1]
             self.calls.append((request.get_method(), path))
+            if request.data:
+                self.bodies.append(json.loads(request.data))
             payloads = {
                 "pulls/7": pull,
                 f"commits/{pull['head']['sha']}/status": status or STATUS_OK,
-                "pulls/7/reviews": reviews if reviews is not None else REVIEW_OK,
+                "pulls/7/reviews?page=1&limit=50": reviews if reviews is not None else REVIEW_OK,
+                "branch_protections?page=1&limit=50": protections if protections is not None else [],
                 "pulls/7/merge": b"",
             }
             value = payloads[path]
@@ -278,8 +301,16 @@ class ForgejoTests(unittest.TestCase):
         self.assertEqual(state["head"], "sha1")
 
     def test_unapproved_review_requires_review(self) -> None:
-        self.respond(dict(PULL), reviews=[])
+        self.respond(dict(PULL), reviews=[], protections=[{"rule_name": "main", "required_approvals": 1}])
         self.assertEqual(mog.classify(self.provider().probe(7)), "review_required")
+
+    def test_no_review_required_without_protection(self) -> None:
+        self.respond(dict(PULL), reviews=[])
+        self.assertEqual(mog.classify(self.provider().probe(7)), "ready")
+
+    def test_approved_required_review_satisfies_rule(self) -> None:
+        self.respond(dict(PULL), protections=[{"rule_name": "main", "required_approvals": 1}])
+        self.assertEqual(mog.classify(self.provider().probe(7)), "ready")
 
     def test_failing_commit_status_blocks(self) -> None:
         self.respond(dict(PULL), status={"status": "failure"})
@@ -299,8 +330,18 @@ class ForgejoTests(unittest.TestCase):
 
     def test_merge_posts_to_provider(self) -> None:
         self.respond(dict(PULL))
-        self.provider().merge(7)
+        self.provider().merge(7, "sha1")
         self.assertEqual(self.calls[-1], ("POST", "pulls/7/merge"))
+        self.assertEqual(self.bodies[-1]["head_commit_id"], "sha1")
+
+    def test_unsupported_review_policy_fails_closed(self) -> None:
+        self.respond(dict(PULL), protections=[{"rule_name": "main", "required_approvals": 1, "ignore_stale_approvals": True}])
+        self.assertEqual(mog.classify(self.provider().probe(7)), "review_required")
+
+    def test_ssh_url_host_is_discovered(self) -> None:
+        with mock.patch.dict(os.environ, {"FORGEJO_TOKEN": "tok"}), \
+                mock.patch.object(mog, "git", return_value="ssh://forgejo@example.test/foo/bar.git"):
+            self.assertEqual(mog.ForgejoProvider("foo/bar", None, timeout=1).host, "example.test")
 
     def test_rate_limit_parses_retry_after(self) -> None:
         provider = self.provider()
