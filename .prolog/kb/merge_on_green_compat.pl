@@ -1,0 +1,10 @@
+% merge-on-green provider compatibility: durable failure modes + fixes.
+% Verified 2026-11-13 (task mog-gh-2-103-compat) on gh 2.103.3 + forgejo 15.0.6.
+
+mog_failure_mode(github_probe, 'gh >= 2.4xx removed `gh pr view --json`; probe must query headRefOid/mergeable/mergeStateStatus/reviewDecision/state via `gh api graphql`. Symptom otherwise: gh prints usage help, helper exits 3.').
+mog_failure_mode(checks_conflation, 'mergeStateStatus conflates pending and failing checks (UNSTABLE covers both); gating on it alone can merge PRs whose checks are still running. Derive checks from the check-runs API for the exact head: pending when no runs or any run incomplete; failure on conclusion failure/timed_out/cancelled/action_required/startup_failure; success only when all completed clean.').
+mog_failure_mode(merge_subcommand, 'gh >= 2.4xx requires the `gh pr merge <n>` subcommand form (old `gh pr <n> --merge` prints usage help); keep --match-head-commit <sha> so GitHub rejects merges whose head moved past validation.').
+mog_failure_mode(forgejo_status_verdict, 'Forgejo combined-status exposes the verdict as `state`, not `status`; read state first, fall back to status, total_count == 0 stays pending. Symptom otherwise: every forgejo gate reads pending forever (bit consortium PR#223).').
+mog_failure_mode(forgejo_review_policy, 'Forgejo review policies requiring team or stale-review evaluation fail closed; only an API-reported APPROVED review satisfies review_required.').
+mog_fixture_rule(view_popping, 'The fake gh fixture must pop one view per PROBE (keyed to the graphql call) and persist last_view for the follow-up check-runs call; popping per gh invocation makes multi-call probes observe phantom head churn.').
+mog_source(canonical, 'skills repo skills/merge-on-green (forgejo nsaspy/skills primary, github mirror). The ephemeral /tmp/opencode/mog-fix copy lacked the forgejo state/pagination hardening and is superseded by this merge; switch consumers to the installed skill once it carries this revision.').

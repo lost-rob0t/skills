@@ -19,6 +19,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import re
@@ -103,18 +104,21 @@ class GithubProvider:
         return result.stdout
 
     def probe(self, number: int) -> dict:
-        raw = self._gh("pr", str(number), "--repo", self.slug(), "--json",
-                       "headRefOid,mergeable,mergeStateStatus,reviewDecision,state")
-        data = json.loads(raw)
+        # gh >= 2.4xx removed `gh pr view --json`; query the same fields via
+        # GraphQL so probe semantics stay identical across gh versions.
+        owner, name = self.slug().split("/")
+        query = ("query($o:String!,$n:String!,$num:Int!){repository(owner:$o,name:$n)"
+                 "{pullRequest(number:$num){headRefOid mergeable mergeStateStatus "
+                 "reviewDecision state}}}")
+        raw = self._gh("api", "graphql", "-f", f"o={owner}", "-f", f"n={name}",
+                       "-F", f"num={number}", "-f", f"query={query}")
+        data = json.loads(raw)["data"]["repository"]["pullRequest"]
         merge_state = data["mergeStateStatus"]
         approved = data.get("reviewDecision") == "APPROVED"
-        checks = "pending"
-        if merge_state in ("BLOCKED", "UNSTABLE"):
-            checks = "failure"
-        elif merge_state == "CLEAN":
-            checks = "success"
+        head = data["headRefOid"]
+        checks = self._checks_for_head(head)
         return {
-            "head": data["headRefOid"],
+            "head": head,
             "merged": data["state"] == "MERGED",
             "closed": data["state"] == "CLOSED",
             "conflict": merge_state == "DIRTY" or data["mergeable"] != "MERGEABLE",
@@ -123,15 +127,35 @@ class GithubProvider:
             "mergeable": data["mergeable"] == "MERGEABLE",
         }
 
-    def merge(self, number: int) -> None:
-        self._gh("pr", str(number), "--repo", self.slug(), "--merge")
+    def _checks_for_head(self, head: str) -> str:
+        # mergeStateStatus conflates pending and failing checks (UNSTABLE
+        # covers both), so gate on the check-runs API for the exact head.
+        raw = self._gh("api", f"repos/{self.slug()}/commits/{head}/check-runs")
+        data = json.loads(raw)
+        runs = data.get("check_runs") or []
+        if not runs:
+            return "pending"
+        if any(run.get("status") != "completed" for run in runs):
+            return "pending"
+        bad = {"failure", "timed_out", "cancelled", "action_required", "startup_failure"}
+        if any(run.get("conclusion") in bad for run in runs):
+            return "failure"
+        return "success"
+
+    def merge(self, number: int, head: str | None = None) -> None:
+        # gh >= 2.4xx requires the `merge` subcommand form; the head pin
+        # makes GitHub reject the merge if the head moved past validation.
+        args = ["pr", "merge", str(number), "--repo", self.slug(), "--merge"]
+        if head:
+            args += ["--match-head-commit", head]
+        self._gh(*args)
 
 
 class ForgejoProvider:
     def __init__(self, repo: str | None, host: str | None, timeout: float) -> None:
         url = git("remote", "get-url", "origin")
         self.slug = repo or self._slug_from_remote(url)
-        match = re.search(r"(?:https?://|git@)([^/:]+)", url)
+        match = re.search(r"(?:https?://(?:[^@/]+@)?|ssh://(?:[^@/]+@)?|git@)([^/:]+)", url)
         self.host = host or (match.group(1) if match else None)
         self.timeout = timeout
         self.token = os.environ.get("FORGEJO_TOKEN", "")
@@ -180,22 +204,64 @@ class ForgejoProvider:
                 "warning": "pending",
                 "failure": "failure",
                 "error": "failure",
-            }.get(status.get("status", "pending"), "pending")
-        reviews = self._request("GET", f"pulls/{number}/reviews")
-        approved = any(review.get("state", "").lower() == "approved" for review in reviews)
+            }.get(status.get("state", status.get("status", "pending")), "pending")
+            if status.get("total_count") == 0:
+                checks = "pending"
+        reviews = []
+        for page in range(1, 101):
+            batch = self._request("GET", f"pulls/{number}/reviews?page={page}&limit=50")
+            if not isinstance(batch, list):
+                raise ApiError("incomplete review data")
+            reviews.extend(batch)
+            if len(batch) < 50:
+                break
+        else:
+            raise ApiError("review pagination exceeded limit")
+        protections = []
+        for page in range(1, 101):
+            batch = self._request("GET", f"branch_protections?page={page}&limit=50")
+            if not isinstance(batch, list):
+                raise ApiError("incomplete branch protection data")
+            protections.extend(batch)
+            if len(batch) < 50:
+                break
+        else:
+            raise ApiError("branch protection pagination exceeded limit")
+        base = (pull.get("base") or {}).get("ref")
+        if not base or not isinstance(protections, list) or not isinstance(reviews, list):
+            raise ApiError("incomplete branch protection or review data")
+        matching = [rule for rule in protections if fnmatch.fnmatchcase(base, rule.get("rule_name") or rule.get("branch_name") or "")]
+        latest_reviews = {}
+        for review in reviews:
+            reviewer = (review.get("user") or {}).get("login")
+            if reviewer:
+                latest_reviews[reviewer] = review
+        review_required = False
+        for rule in matching:
+            # Team eligibility and stale-review policies cannot be inferred
+            # safely from review counts alone.
+            if rule.get("approvals_whitelist_teams") or rule.get("dismiss_stale_approvals") or rule.get("ignore_stale_approvals") or rule.get("block_on_official_review_requests"):
+                review_required = True
+                continue
+            allowed = set(rule.get("approvals_whitelist_username") or []) if rule.get("enable_approvals_whitelist") else None
+            eligible = [r for user, r in latest_reviews.items() if allowed is None or user in allowed]
+            approved = sum(r.get("state", "").lower() == "approved" for r in eligible)
+            rejected = any(r.get("state", "").lower() == "request_changes" for r in latest_reviews.values())
+            if approved < rule.get("required_approvals", 0) or (rule.get("block_on_rejected_reviews") and rejected):
+                review_required = True
         mergeable = bool(pull.get("mergeable", False))
         return {
             "head": head,
             "merged": merged,
             "closed": closed,
-            "conflict": not mergeable,
-            "review_required": checks == "success" and not approved,
+            "conflict": not mergeable or pull.get("draft", False) or pull.get("title", "").startswith(("WIP:", "[WIP]")),
+            "review_required": review_required,
             "checks": checks,
             "mergeable": mergeable,
         }
 
-    def merge(self, number: int) -> None:
-        self._request("POST", f"pulls/{number}/merge", {"Do": "merge"})
+    def merge(self, number: int, head: str) -> None:
+        self._request("POST", f"pulls/{number}/merge", {"Do": "merge", "head_commit_id": head})
 
 
 def classify(state: dict) -> str:
@@ -326,7 +392,7 @@ def main() -> int:
             return 0
         log(f"merging verified head {validated_head}")
         try:
-            provider.merge(args.number)
+            provider.merge(args.number, validated_head)
         except ApiError as error:
             if error.retry_after is not None:
                 log("merge hit a rate limit; revalidating")
