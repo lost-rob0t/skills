@@ -63,6 +63,7 @@
         sudo = ./skills/sudo;
         task-steward-bootstrap = ./skills/task-steward-bootstrap;
         task-steward-worker = ./skills/task-steward-worker;
+        web-search = ./skills/web-search;
         youtube-context = ./skills/youtube-context;
         worker-orchestration = ./skills/worker-orchestration;
         zara-mcp = ./skills/zara-mcp;

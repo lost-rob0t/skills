@@ -80,6 +80,7 @@ Client-specific paths are deployment views. Do not maintain separate editable co
 - `sudo` - sudo, privilege-escalation, desktop-portals, xdg-desktop-portal, polkit, authentication.
 - `task-steward-bootstrap` - steward, bootstrap, a0, opencode, agents, adapters.
 - `task-steward-worker` - steward, rage, leases, fencing, heartbeat, receipts.
+- `web-search` - web-search, meta-search, searx, yacy, brave, crawl, mcp.
 - `youtube-context` - youtube, transcripts, yt-dlp, whisper, video-context.
 - `worker-orchestration` - bounded model routing, delegation, fleets, and review workers.
 - `zara-mcp` - zara, mcp, stdio, http, tools, resources, prompts, debugging.
